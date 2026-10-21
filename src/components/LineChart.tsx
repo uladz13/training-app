@@ -15,6 +15,9 @@ interface Props {
   decimals: number;
   pointLabel: string;
   lineLabel?: string;
+  /** границы оси X (выбранный период); по умолчанию — по данным */
+  from?: string;
+  to?: string;
 }
 
 const H = 180;
@@ -29,7 +32,7 @@ function ticks(min: number, max: number, step: number): number[] {
 }
 
 /** Линейный график по датам: маркеры замеров + линия (среднее или сами значения), касание показывает значения. */
-export function LineChart({ points, line, unit, decimals, pointLabel, lineLabel }: Props) {
+export function LineChart({ points, line, unit, decimals, pointLabel, lineLabel, from, to }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(340);
   const [sel, setSel] = useState<number | null>(null);
@@ -43,11 +46,11 @@ export function LineChart({ points, line, unit, decimals, pointLabel, lineLabel 
     return () => ro.disconnect();
   }, []);
 
-  if (points.length === 0) return <div class="empty small">Записей пока нет.</div>;
+  if (points.length === 0) return <div class="empty small">За выбранный период записей нет.</div>;
 
   const all = [...points, ...(line ?? [])];
-  const x0 = Math.min(...all.map((p) => dayNum(p.date)));
-  const x1 = Math.max(...all.map((p) => dayNum(p.date)));
+  const x0 = from ? dayNum(from) : Math.min(...all.map((p) => dayNum(p.date)));
+  const x1 = to ? dayNum(to) : Math.max(...all.map((p) => dayNum(p.date)));
   let y0 = Math.min(...all.map((p) => p.value));
   let y1 = Math.max(...all.map((p) => p.value));
   const span = Math.max(y1 - y0, decimals ? 1 : 2);
@@ -76,8 +79,8 @@ export function LineChart({ points, line, unit, decimals, pointLabel, lineLabel 
     setSel(best);
   };
 
-  const firstDate = points[0].date;
-  const lastDate = points[points.length - 1].date;
+  const firstDate = from ?? points[0].date;
+  const lastDate = to ?? points[points.length - 1].date;
 
   return (
     <div class="chart" ref={box}>

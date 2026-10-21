@@ -7,6 +7,8 @@ import { fmt1, weightSeries, lastWith, waistDue } from '../body';
 import { formatDate, todayIso } from '../util';
 import type { BodyEntry } from '../types';
 
+const DEFAULT_RANGE_DAYS = 14;
+
 function delta(n: number, unit: string, d = 1): string {
   const s = n > 0 ? '+' : n < 0 ? '−' : '±';
   return `${s}${Math.abs(n).toFixed(d).replace('.', ',')} ${unit}`;
@@ -15,6 +17,10 @@ function delta(n: number, unit: string, d = 1): string {
 export function BodyScreen() {
   const entries = useLive(() => db.body.toArray(), []);
   const [edit, setEdit] = useState<BodyEntry | null>(null);
+  const today = todayIso();
+  // Период графиков: по умолчанию последние 14 дней (сегодня − 14 … сегодня).
+  const [from, setFrom] = useState(shift(today, -DEFAULT_RANGE_DAYS));
+  const [to, setTo] = useState(today);
   if (!entries) return <div class="loading">Загрузка…</div>;
 
   const series = weightSeries(entries);
@@ -24,7 +30,7 @@ export function BodyScreen() {
   const lastWaist = lastWith(entries, 'waist');
   const firstWaist = waists[0];
   const list = [...entries].sort((a, b) => (a.date < b.date ? 1 : -1));
-  const today = todayIso();
+  const inRange = (d: string) => d >= from && d <= to;
 
   return (
     <div class="screen">
@@ -52,21 +58,42 @@ export function BodyScreen() {
         {waistDue(entries, today) && <div class="small warn-text">Пора измерить талию — запиши на экране «Сегодня».</div>}
       </section>
 
+      <section class="card range">
+        <span class="stat-label">Период графиков</span>
+        <div class="range-row">
+          <input class="text-input date-input" type="date" value={from} max={to} onChange={(e) => setFrom((e.target as HTMLInputElement).value || from)} />
+          <span class="muted">—</span>
+          <input class="text-input date-input" type="date" value={to} min={from} onChange={(e) => setTo((e.target as HTMLInputElement).value || to)} />
+        </div>
+        {(from !== shift(today, -DEFAULT_RANGE_DAYS) || to !== today) && (
+          <button class="link small" onClick={() => { setFrom(shift(today, -DEFAULT_RANGE_DAYS)); setTo(today); }}>
+            Последние 14 дней
+          </button>
+        )}
+      </section>
+
       <section class="card">
         <h2>Вес</h2>
         <LineChart
-          points={series.map((p) => ({ date: p.date, value: p.weight }))}
-          line={series.map((p) => ({ date: p.date, value: p.avg }))}
+          points={series.filter((p) => inRange(p.date)).map((p) => ({ date: p.date, value: p.weight }))}
           unit="кг"
           decimals={1}
           pointLabel="Утренний вес"
-          lineLabel="Среднее за 7 дней"
+          from={from}
+          to={to}
         />
       </section>
 
       <section class="card">
         <h2>Талия</h2>
-        <LineChart points={waists.map((e) => ({ date: e.date, value: e.waist! }))} unit="см" decimals={0} pointLabel="Талия" />
+        <LineChart
+          points={waists.filter((e) => inRange(e.date)).map((e) => ({ date: e.date, value: e.waist! }))}
+          unit="см"
+          decimals={0}
+          pointLabel="Талия"
+          from={from}
+          to={to}
+        />
       </section>
 
       <section class="card">
@@ -114,10 +141,18 @@ function EditSheet({ entry, entries, onClose }: { entry: BodyEntry; entries: Bod
   const [waist, setWaist] = useState<number | undefined>(entry.waist ?? lastWith(entries, 'waist')?.waist);
   const [withWaist, setWithWaist] = useState(entry.waist != null);
 
-  const save = async () => {
+  const write = async () => {
     if (date !== entry.date && exists) await db.body.delete(entry.date);
     await db.body.put({ date, weight, ...(withWaist && waist != null ? { waist } : {}) });
+  };
+  const save = async () => {
+    await write();
     onClose();
+  };
+  /** Для ввода старых данных подряд: сохранить и перейти к следующей дате. */
+  const saveNext = async () => {
+    await write();
+    setDate(shift(date, 1));
   };
   const remove = async () => {
     if (confirm(`Удалить замер за ${formatDate(entry.date)}?`)) {
@@ -151,10 +186,16 @@ function EditSheet({ entry, entries, onClose }: { entry: BodyEntry; entries: Bod
             Удалить
           </button>
         )}
+        {!exists && (
+          <button class="btn" onClick={saveNext}>
+            Сохранить и след. день
+          </button>
+        )}
         <button class="btn primary" onClick={save}>
           Сохранить
         </button>
       </div>
+      {!exists && <p class="muted small">«Сохранить и след. день» удобно для ввода старых записей подряд: дата сдвигается на день, значения остаются.</p>}
     </Sheet>
   );
 }
