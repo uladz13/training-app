@@ -8,3 +8,5 @@ dist
 CLAUDE.md
 .claude/
 project/
+# приватный репозиторий (training-app-private)
+.private-git/
