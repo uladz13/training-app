@@ -78,6 +78,16 @@ export interface Workout {
   runningSince?: number | null;
 }
 
+/** Утренний замер тела. Ключ — дата. */
+export interface BodyEntry {
+  /** YYYY-MM-DD */
+  date: string;
+  /** вес, кг (шаг 0,1) */
+  weight?: number;
+  /** талия, см (шаг 1) */
+  waist?: number;
+}
+
 export interface Meta {
   key: string;
   value: unknown;

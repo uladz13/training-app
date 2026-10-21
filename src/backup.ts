@@ -8,6 +8,7 @@ export interface BackupFile {
   exercises: unknown[];
   templates: unknown[];
   workouts: unknown[];
+  body?: unknown[];
 }
 
 export async function exportBackup(): Promise<void> {
@@ -17,7 +18,8 @@ export async function exportBackup(): Promise<void> {
     exportedAt: new Date().toISOString(),
     exercises: await db.exercises.toArray(),
     templates: await db.templates.toArray(),
-    workouts: await db.workouts.toArray()
+    workouts: await db.workouts.toArray(),
+    body: await db.body.toArray()
   };
   const blob = new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' });
   const name = `training-backup-${todayIso()}.json`;
@@ -45,13 +47,16 @@ export async function importBackup(file: File): Promise<number> {
   const data = JSON.parse(await file.text()) as BackupFile;
   if (data.app !== 'training-app' || !Array.isArray(data.workouts)) throw new Error('Это не файл бэкапа приложения');
   if (data.schema > SCHEMA_VERSION) throw new Error('Бэкап создан более новой версией приложения');
-  await db.transaction('rw', db.exercises, db.templates, db.workouts, db.meta, async () => {
+  await db.transaction('rw', [db.exercises, db.templates, db.workouts, db.meta, db.body], async () => {
     await db.exercises.clear();
     await db.templates.clear();
     await db.workouts.clear();
+    await db.body.clear();
     await db.exercises.bulkPut(data.exercises as never[]);
     await db.templates.bulkPut(data.templates as never[]);
     await db.workouts.bulkPut(data.workouts as never[]);
+    await db.body.bulkPut((data.body ?? []) as never[]);
+    await db.meta.put({ key: 'bodySeeded', value: 'import' });
     await db.meta.put({ key: 'seeded', value: 'import' });
   });
   return data.workouts.length;

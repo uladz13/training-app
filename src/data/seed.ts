@@ -72,6 +72,20 @@ const BY_DAY: Record<number, Row[]> = {
   ]
 };
 
+/** Стартовые замеры тела (переданы пользователем 21.10.2026). */
+export const BODY_SEED: { date: string; weight: number; waist: number }[] = [
+  { date: '2026-10-12', weight: 80.9, waist: 84 },
+  { date: '2026-10-13', weight: 81.3, waist: 84 },
+  { date: '2026-10-14', weight: 80.6, waist: 84 },
+  { date: '2026-10-15', weight: 81.5, waist: 84 },
+  { date: '2026-10-16', weight: 81.5, waist: 85 },
+  { date: '2026-10-17', weight: 81.9, waist: 85 },
+  { date: '2026-10-18', weight: 81.9, waist: 85 },
+  { date: '2026-10-19', weight: 82.0, waist: 86 },
+  { date: '2026-10-20', weight: 82.3, waist: 86 },
+  { date: '2026-10-21', weight: 82.3, waist: 86 }
+];
+
 /** Длительность каждой тренировки стартовой истории — 50 минут. */
 export const SEED_DURATION_SEC = 50 * 60;
 

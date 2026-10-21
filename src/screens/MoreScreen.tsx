@@ -87,7 +87,7 @@ export function MoreScreen() {
         ))}
       </section>
 
-      <p class="muted small center">Тренировки · версия 0.2.0</p>
+      <p class="muted small center">Тренировки · версия 0.3.0</p>
     </div>
   );
 }

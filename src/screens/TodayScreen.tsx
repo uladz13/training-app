@@ -8,6 +8,7 @@ import { go } from '../router';
 import { summary } from '../components/ExerciseCard';
 import { daysSinceBackup, exportBackup } from '../backup';
 import type { WorkoutItem } from '../types';
+import { BodyCard } from '../components/BodyCard';
 import { durationShort, elapsedSec, formatVolume, workoutVolume } from '../stats';
 
 export function TodayScreen() {
@@ -47,6 +48,8 @@ export function TodayScreen() {
           </button>
         </div>
       )}
+
+      <BodyCard date={date} />
 
       {todays.map((w) => {
         const done = w.items.filter((i) => i.done).length;

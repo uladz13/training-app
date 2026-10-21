@@ -5,6 +5,7 @@ import { TodayScreen } from './screens/TodayScreen';
 import { WorkoutScreen } from './screens/WorkoutScreen';
 import { HistoryScreen } from './screens/HistoryScreen';
 import { MoreScreen } from './screens/MoreScreen';
+import { BodyScreen } from './screens/BodyScreen';
 import { useRestTimer, addRest, stopRest } from './timer';
 
 function RestBar() {
@@ -54,12 +55,14 @@ export function App() {
   if (page === 'workout' && arg) screen = <WorkoutScreen id={Number(arg)} />;
   else if (page === 'history') screen = <HistoryScreen />;
   else if (page === 'more') screen = <MoreScreen />;
+  else if (page === 'body') screen = <BodyScreen />;
   else screen = <TodayScreen />;
 
   const tab = page === 'workout' ? '' : page;
   const nav: [string, string][] = [
     ['today', 'Сегодня'],
     ['history', 'История'],
+    ['body', 'Тело'],
     ['more', 'Ещё']
   ];
 
@@ -69,7 +72,7 @@ export function App() {
       <RestBar />
       <nav class="tabbar">
         {nav.map(([k, l]) => (
-          <button class={tab === k || (k === 'today' && !['history', 'more', 'workout'].includes(page)) ? 'on' : ''} onClick={() => go(k)}>
+          <button class={tab === k || (k === 'today' && !['history', 'more', 'workout', 'body'].includes(page)) ? 'on' : ''} onClick={() => go(k)}>
             {l}
           </button>
         ))}
