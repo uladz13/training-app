@@ -1,3 +1,4 @@
+import { ExerciseIcon } from '../components/ExerciseIcon';
 import { useState } from 'preact/hooks';
 import { db } from '../db';
 import { useLive } from '../hooks';
@@ -68,7 +69,10 @@ export function ExercisesScreen() {
         {list.length === 0 && <div class="empty small">Записей пока нет.</div>}
         {list.map(({ ex, sessions }) => (
           <button class="list-row" onClick={() => go('exercise/' + ex.id)}>
-            <span>{ex.name}</span>
+            <span class="with-icon">
+              <ExerciseIcon ex={ex} size={28} />
+              {ex.name}
+            </span>
             <span class="muted small">
               {formatDate(sessions[sessions.length - 1].date)} · {sessions.length} трен. ›
             </span>

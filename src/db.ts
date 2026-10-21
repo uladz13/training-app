@@ -33,12 +33,15 @@ class AppDB extends Dexie {
       );
     // v3: замеры тела (вес, талия).
     this.version(3).stores({ body: 'date' });
+    // v4: необязательное поле exercises.icon (без индекса). Данные не меняются: нет поля — иконка по id.
+    // Версия поднята, чтобы номер схемы базы совпадал с SCHEMA_VERSION бэкапа.
+    this.version(4).stores({});
   }
 }
 
 export const db = new AppDB();
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /** Первичное наполнение новой установки: каталог упражнений и программа (без личных данных). */
 export async function initDb(): Promise<void> {

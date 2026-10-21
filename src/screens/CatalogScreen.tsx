@@ -1,3 +1,5 @@
+import { ExerciseIcon } from '../components/ExerciseIcon';
+import { IconPicker } from '../components/IconPicker';
 import { useState } from 'preact/hooks';
 import { db } from '../db';
 import { useLive } from '../hooks';
@@ -31,7 +33,10 @@ export function CatalogScreen() {
           .sort((a, b) => a.name.localeCompare(b.name, 'ru'))
           .map((e) => (
             <button class="list-row" onClick={() => setEdit(e)}>
-              <span>{e.name}</span>
+              <span class="with-icon">
+                <ExerciseIcon ex={e} size={28} />
+                {e.name}
+              </span>
               <span class="muted small">
                 {KIND[e.kind]}
                 {e.custom ? ' · своё' : ''} ›
@@ -54,9 +59,13 @@ export function CatalogScreen() {
 function EditExercise({ ex, canDelete, inProgram, onClose }: { ex: Exercise; canDelete: boolean; inProgram: boolean; onClose: () => void }) {
   const [name, setName] = useState(ex.name);
   const [technique, setTechnique] = useState(ex.technique);
+  const [icon, setIcon] = useState(ex.icon);
+  const [picking, setPicking] = useState(false);
   const save = async () => {
     if (!name.trim()) return;
-    await db.exercises.put({ ...ex, name: name.trim(), technique: technique.trim() || 'Описание не добавлено.' });
+    const next: Exercise = { ...ex, name: name.trim(), technique: technique.trim() || 'Описание не добавлено.', icon };
+    if (!icon) delete next.icon;
+    await db.exercises.put(next);
     onClose();
   };
   const remove = async () => {
@@ -71,6 +80,22 @@ function EditExercise({ ex, canDelete, inProgram, onClose }: { ex: Exercise; can
   };
   return (
     <Sheet title="Упражнение" onClose={onClose}>
+      <div class="ex-edit-icon">
+        <ExerciseIcon ex={{ id: ex.id, icon }} size={48} />
+        <button class="chip" onClick={() => setPicking((v) => !v)}>
+          {picking ? 'Скрыть иконки' : 'Сменить иконку'}
+        </button>
+      </div>
+      {picking && (
+        <IconPicker
+          exId={ex.id}
+          value={icon}
+          onChange={(v) => {
+            setIcon(v);
+            setPicking(false);
+          }}
+        />
+      )}
       <label class="field">
         <span>Название</span>
         <input class="text-input" value={name} onInput={(e) => setName((e.target as HTMLInputElement).value)} />

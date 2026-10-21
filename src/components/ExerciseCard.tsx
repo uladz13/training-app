@@ -1,3 +1,4 @@
+import { ExerciseIcon } from './ExerciseIcon';
 import { useState } from 'preact/hooks';
 import type { Exercise, SetEntry, WorkoutItem } from '../types';
 import { Stepper, Check, Sheet } from './ui';
@@ -107,6 +108,7 @@ export function ExerciseCard({ item, ex, index, count, onChange, onDelete, onMov
   return (
     <section class={'card ex-card' + (item.done ? ' done' : '')}>
       <header class="ex-head">
+        <ExerciseIcon ex={ex} size={collapsed ? 24 : 32} class={collapsed ? 'dim' : ''} />
         <button class="ex-title" onClick={() => (collapsed ? setExpanded(true) : setShowTech((v) => !v))}>
           <span class="ex-name">{ex.name}</span>
           <span class="ex-target">{collapsed ? summary(item, ex) : targetLabel(item, ex)}</span>

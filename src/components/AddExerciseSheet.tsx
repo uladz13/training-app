@@ -1,3 +1,4 @@
+import { ExerciseIcon } from './ExerciseIcon';
 import { useState } from 'preact/hooks';
 import type { Equipment, Exercise, ExerciseKind } from '../types';
 import { Sheet } from './ui';
@@ -58,7 +59,8 @@ export function AddExerciseSheet({ exercises, onPick, onClose }: Props) {
             + Создать новое упражнение
           </button>
           {list.map((e) => (
-            <button class="list-item" onClick={() => onPick(e)}>
+            <button class="list-item with-icon" onClick={() => onPick(e)}>
+              <ExerciseIcon ex={e} size={24} />
               {e.name}
             </button>
           ))}

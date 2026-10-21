@@ -1,3 +1,4 @@
+import { ExerciseIcon } from '../components/ExerciseIcon';
 import { useEffect, useState } from 'preact/hooks';
 import { db } from '../db';
 import { useLive } from '../hooks';
@@ -99,8 +100,11 @@ export function DayEditor({ day }: { day: number }) {
         return (
           <section class="card tpl-item">
             <div class="row-between">
-              <strong>
-                {i + 1}. {ex.name}
+              <strong class="with-icon">
+                <ExerciseIcon ex={ex} size={24} />
+                <span>
+                  {i + 1}. {ex.name}
+                </span>
               </strong>
               <div class="mini-actions">
                 <button class="icon-btn" disabled={i === 0} onClick={() => move(i, -1)} aria-label="выше">

@@ -1,3 +1,4 @@
+import { ExerciseIcon } from '../components/ExerciseIcon';
 import { useState } from 'preact/hooks';
 import { db } from '../db';
 import { useLive } from '../hooks';
@@ -52,7 +53,10 @@ export function ExerciseScreen({ id }: { id: string }) {
           <button class="link small" onClick={() => history.back()}>
             ‹ Назад
           </button>
-          <h1>{ex.name}</h1>
+          <h1 class="with-icon">
+            <ExerciseIcon ex={ex} size={48} />
+            {ex.name}
+          </h1>
         </div>
       </div>
       {metrics.length > 1 && (

@@ -56,6 +56,23 @@ main { max-width: 640px; margin: 0 auto; }
 .ex-head { display: flex; align-items: flex-start; gap: 10px; }
 .ex-title { flex: 1; text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 0; }
 .ex-name { font-weight: 600; font-size: 17px; }
+.ex-icon { display: inline-flex; flex: none; }
+.ex-icon svg { display: block; }
+.ex-icon.dim { opacity: 0.6; }
+.ex-head > .ex-icon { margin-top: 1px; }
+.with-icon { display: flex; align-items: center; gap: 10px; }
+.ex-edit-icon { display: flex; align-items: center; gap: 12px; }
+.icon-picker { display: flex; flex-direction: column; gap: 6px; background: var(--card-2); border-radius: 12px; padding: 10px; }
+.icon-group { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.icon-group i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; }
+.icon-cell { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; border-radius: 10px; background: var(--card); border: 2px solid transparent; }
+.icon-cell.wide { grid-column: 1 / -1; justify-content: flex-start; padding: 0 10px; }
+.icon-cell.on { border-color: var(--accent); }
+.plan li .ex-icon { display: inline-flex; }
+/* номер — своим счётчиком: маркер списка не выравнивается по строке с иконкой */
+.plan:has(.with-icon) { list-style: none; padding-left: 0; counter-reset: plan; }
+.plan .with-icon::before { counter-increment: plan; content: counter(plan) '.'; min-width: 18px; color: var(--muted); }
 .ex-target { color: var(--muted); font-size: 13px; }
 .technique { background: var(--card-2); border-radius: 10px; padding: 4px 12px; font-size: 14px; color: #c9d0d6; }
 .technique p { margin: 8px 0; }

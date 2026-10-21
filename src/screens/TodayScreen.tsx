@@ -1,3 +1,4 @@
+import { ExerciseIcon } from '../components/ExerciseIcon';
 import { useState } from 'preact/hooks';
 import { db } from '../db';
 import { useLive } from '../hooks';
@@ -84,8 +85,13 @@ export function TodayScreen() {
                 if (!ex) return null;
                 return (
                   <li>
-                    <span>{ex.name}</span>
-                    <span class="muted small">{summary(it, ex)}</span>
+                    <div class="with-icon">
+                      <ExerciseIcon ex={ex} size={24} />
+                      <div>
+                        <span>{ex.name}</span>
+                        <span class="muted small">{summary(it, ex)}</span>
+                      </div>
+                    </div>
                   </li>
                 );
               })}

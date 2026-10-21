@@ -12,6 +12,8 @@ export interface Exercise {
   perSide: boolean;
   technique: string;
   custom?: boolean;
+  /** id иконки из data/icons.ts; нет — штатная по id упражнения или нейтральная */
+  icon?: string;
 }
 
 export interface Target {
