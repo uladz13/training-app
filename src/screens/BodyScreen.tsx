@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks';
 import { db } from '../db';
 import { useLive } from '../hooks';
 import { LineChart } from '../components/LineChart';
+import { ProgressTabs } from '../components/RangePicker';
 import { Sheet, Stepper } from '../components/ui';
 import { fmt1, weightSeries, lastWith, waistDue } from '../body';
 import { formatDate, todayIso } from '../util';
@@ -35,8 +36,9 @@ export function BodyScreen() {
   return (
     <div class="screen">
       <div class="screen-head">
-        <h1>Тело</h1>
+        <h1>Прогресс</h1>
       </div>
+      <ProgressTabs active="body" />
 
       <section class="card">
         <div class="tiles">

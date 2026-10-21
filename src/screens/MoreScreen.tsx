@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks';
+import { go } from '../router';
 import { db, requestPersistence } from '../db';
 import { useLive } from '../hooks';
 import { exportBackup, importBackup } from '../backup';
@@ -66,28 +67,18 @@ export function MoreScreen() {
       <WeightCalc />
 
       <section class="card">
-        <h2>Программа</h2>
-        {(templates ?? []).map((t) => (
-          <details class="tpl">
-            <summary>
-              <strong>{DAY_NAMES[t.day]}</strong> — {t.title}
-            </summary>
-            <ol class="plan">
-              {t.items.map((it) => (
-                <li>
-                  <span>{byId.get(it.exerciseId)?.name ?? it.exerciseId}</span>
-                  <span class="muted small">
-                    {it.sets} × {it.min === it.max ? it.min : `${it.min}–${it.max}`}
-                    {byId.get(it.exerciseId)?.kind === 'time' ? ' с' : ''}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </details>
-        ))}
+        <h2>Программа и упражнения</h2>
+        <button class="list-row" onClick={() => go('program')}>
+          <span>Программа по дням</span>
+          <span class="muted small">{(templates ?? []).length} дней ›</span>
+        </button>
+        <button class="list-row" onClick={() => go('catalog')}>
+          <span>Каталог упражнений</span>
+          <span class="muted small">{(exercises ?? []).length} ›</span>
+        </button>
       </section>
 
-      <p class="muted small center">Тренировки · версия 0.3.1</p>
+      <p class="muted small center">Тренировки · версия 0.4.0</p>
     </div>
   );
 }

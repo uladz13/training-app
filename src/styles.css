@@ -188,3 +188,16 @@ main { max-width: 640px; margin: 0 auto; }
 .range { display: flex; flex-direction: column; gap: 6px; }
 .range-row { display: flex; align-items: center; gap: 8px; }
 .range-row .date-input { flex: 1; width: auto; min-width: 0; }
+
+.progress-tabs { display: grid; grid-template-columns: 1fr 1fr; }
+.progress-tabs button { padding: 10px; text-align: center; }
+.list-row { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 2px; border-top: 1px solid var(--line); text-align: left; }
+.list-row:first-of-type { border-top: 0; }
+.list-row > span:last-child { flex: none; }
+.list-card { display: flex; flex-direction: column; gap: 4px; }
+.tpl-item { display: flex; flex-direction: column; gap: 8px; }
+.mini-actions { display: flex; gap: 4px; flex: none; }
+.mini-actions .icon-btn { width: 34px; height: 34px; }
+.record { padding: 4px 0; }
+.chart .bar { fill: var(--accent); opacity: 0.55; }
+.chart .bar.bar-sel { opacity: 1; }

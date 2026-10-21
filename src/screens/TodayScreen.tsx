@@ -3,7 +3,7 @@ import { db } from '../db';
 import { useLive } from '../hooks';
 import { DAY_NAMES, DAY_SHORT, formatDate, todayIso } from '../util';
 import { isoDay } from '../data/seed';
-import { createWorkout } from '../workoutLogic';
+import { createWorkout, planItems } from '../workoutLogic';
 import { go } from '../router';
 import { summary } from '../components/ExerciseCard';
 import { daysSinceBackup, exportBackup } from '../backup';
@@ -17,13 +17,10 @@ export function TodayScreen() {
   const todays = useLive(() => db.workouts.where('date').equals(date).toArray(), [date]);
   const tpl = useLive(() => db.templates.get(day), [day]);
   const exercises = useLive(() => db.exercises.toArray(), []);
-  const prev = useLive(async () => {
-    const list = await db.workouts.where('day').equals(day).toArray();
-    return list.filter((w) => w.date < date).sort((a, b) => (a.date < b.date ? 1 : -1))[0] ?? null;
-  }, [day, date]);
+  const plan = useLive(() => planItems(date, day), [day, date]);
   const backupDays = useLive(() => daysSinceBackup(), []);
 
-  if (!todays || !exercises || prev === undefined) return <div class="loading">Загрузка…</div>;
+  if (!todays || !exercises || !plan) return <div class="loading">Загрузка…</div>;
   const byId = new Map(exercises.map((e) => [e.id, e]));
 
   const start = async () => {
@@ -79,16 +76,16 @@ export function TodayScreen() {
           <>
             <h2>{tpl.title}</h2>
             <div class="muted small">
-              {prev ? `Цифры — с прошлого раза (${formatDate(prev.date)})` : 'Цифры — из программы'}
+              {plan.prevDate ? `Упражнения — из программы, цифры — с прошлого раза (${formatDate(plan.prevDate)})` : 'Упражнения и цифры — из программы'}
             </div>
             <ol class="plan">
-              {(prev ? prev.items : tpl.items).map((it) => {
+              {plan.items.map((it) => {
                 const ex = byId.get(it.exerciseId);
                 if (!ex) return null;
                 return (
                   <li>
                     <span>{ex.name}</span>
-                    {prev && <span class="muted small">{summary(it as WorkoutItem, ex)}</span>}
+                    <span class="muted small">{summary(it, ex)}</span>
                   </li>
                 );
               })}

@@ -4,6 +4,8 @@ import { formatDate } from '../util';
 export interface Pt {
   date: string;
   value: number;
+  /** пояснение в подписи выбранной точки */
+  note?: string;
 }
 
 interface Props {
@@ -56,9 +58,11 @@ export function LineChart({ points, line, unit, decimals, pointLabel, lineLabel,
   const span = Math.max(y1 - y0, decimals ? 1 : 2);
   y0 -= span * 0.15;
   y1 += span * 0.15;
-  const rawStep = span <= 2 ? 0.5 : span <= 5 ? 1 : span <= 12 ? 2 : 5;
-  // Целые единицы (талия, см) — сетка только по целым значениям.
-  const step = decimals === 0 ? Math.max(1, rawStep) : rawStep;
+  // «Красивый» шаг сетки ~4 линии; для целых единиц (талия, повторы, объём) — не меньше 1.
+  const raw = span / 4;
+  const p10 = Math.pow(10, Math.floor(Math.log10(raw)));
+  const nice = [1, 2, 2.5, 5, 10].map((m) => m * p10).find((x) => x >= raw) ?? raw;
+  const step = Math.max(decimals === 0 ? 1 : 0.5, nice);
 
   const X = (d: string) => PAD.l + (x1 === x0 ? 0.5 : (dayNum(d) - x0) / (x1 - x0)) * (w - PAD.l - PAD.r);
   const Y = (v: number) => PAD.t + (1 - (v - y0) / (y1 - y0)) * (H - PAD.t - PAD.b);
@@ -88,8 +92,9 @@ export function LineChart({ points, line, unit, decimals, pointLabel, lineLabel,
         <span class="muted small">{formatDate(cur.date)}</span>
         <span>
           <strong>
-            {fmt(cur.value, decimals)} {unit}
+            {decimals ? fmt(cur.value, decimals) : Math.round(cur.value).toLocaleString('ru-RU')} {unit}
           </strong>
+          {cur.note && <span class="muted small"> · {cur.note}</span>}
           {curLine && lineLabel && (
             <span class="muted small">
               {' '}
@@ -103,7 +108,7 @@ export function LineChart({ points, line, unit, decimals, pointLabel, lineLabel,
           <g>
             <line x1={PAD.l} x2={w - PAD.r} y1={Y(t)} y2={Y(t)} class="grid" />
             <text x={PAD.l - 6} y={Y(t) + 4} class="axis" text-anchor="end">
-              {fmt(t, step < 1 ? 1 : 0)}
+              {(step < 1 ? fmt(t, 1) : Math.round(t).toLocaleString('ru-RU'))}
             </text>
           </g>
         ))}

@@ -198,6 +198,9 @@ export function ExerciseCard({ item, ex, index, count, onChange, onDelete, onMov
             <button class="chip" onClick={() => setEditing(true)}>
               Изменить
             </button>
+            <button class="chip" onClick={() => (location.hash = '#/exercise/' + encodeURIComponent(ex.id))}>
+              График
+            </button>
             {item.done && (
               <button class="chip" onClick={() => setExpanded(false)}>
                 Свернуть
