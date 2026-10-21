@@ -4,10 +4,13 @@ import { useLive, useWakeLock } from '../hooks';
 import type { Exercise, Workout, WorkoutItem } from '../types';
 import { ExerciseCard } from '../components/ExerciseCard';
 import { AddExerciseSheet } from '../components/AddExerciseSheet';
-import { Check } from '../components/ui';
+import { Check, Sheet, Stepper } from '../components/ui';
+import { elapsedSec, formatDuration, formatVolume, workoutVolume } from '../stats';
 import { DAY_NAMES, formatDate } from '../util';
 import { itemForExercise } from '../workoutLogic';
 import { go } from '../router';
+import { isoDay } from '../data/seed';
+import { hintFor } from '../progression';
 
 export function WorkoutScreen({ id }: { id: number }) {
   // Локальное состояние: интерфейс обновляется сразу, запись в базу идёт фоном.
@@ -21,7 +24,21 @@ export function WorkoutScreen({ id }: { id: number }) {
   }, [id]);
   const exercises = useLive(() => db.exercises.toArray(), []);
   const [adding, setAdding] = useState(false);
+  // Прошлая тренировка того же дня недели — источник подсказок прогрессии.
+  const prev = useLive(async () => {
+    if (!workout) return null;
+    const list = await db.workouts.where('day').equals(workout.day).toArray();
+    return list.filter((x) => x.date < workout.date).sort((a, b) => (a.date < b.date ? 1 : -1))[0] ?? null;
+  }, [workout?.day, workout?.date]);
   useWakeLock(!!workout && !workout.finished);
+  const [editingTime, setEditingTime] = useState(false);
+  // Перерисовка раз в секунду, пока идёт таймер тренировки.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!workout?.runningSince) return;
+    const t = window.setInterval(() => setTick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [workout?.runningSince]);
 
   if (workout === undefined || !exercises) return <div class="loading">Загрузка…</div>;
   if (!workout) return <div class="empty">Тренировка не найдена.</div>;
@@ -36,6 +53,13 @@ export function WorkoutScreen({ id }: { id: number }) {
   const setItem = (i: number, it: WorkoutItem) =>
     patch({ items: current.current!.items.map((x, j) => (j === i ? it : x)) });
   const done = workout.items.filter((i) => i.done).length;
+  const volume = workoutVolume(workout, byId);
+  const running = !!workout.runningSince;
+  const elapsed = elapsedSec(workout);
+
+  /** Остановить текущий отрезок и прибавить его к накопленному времени. */
+  const stopClock = (): Partial<Workout> => ({ durationSec: elapsedSec(current.current!), runningSince: null });
+  const toggleClock = () => patch(running ? stopClock() : { runningSince: Date.now() });
 
   const move = (i: number, dir: -1 | 1) => {
     const items = [...current.current!.items];
@@ -63,14 +87,33 @@ export function WorkoutScreen({ id }: { id: number }) {
       <div class="screen-head">
         <div>
           <div class="eyebrow">
-            {DAY_NAMES[workout.day]}, {formatDate(workout.date)}
+            {DAY_NAMES[isoDay(workout.date)]}, {formatDate(workout.date)}
           </div>
           <h1>{workout.title}</h1>
         </div>
-        <div class="progress-pill">
-          {done}/{workout.items.length}
-        </div>
       </div>
+
+      <section class="card stats-bar">
+        <button class="clock" onClick={() => setEditingTime(true)} aria-label="изменить длительность">
+          <span class="stat-label">{workout.finished ? 'Длительность' : running ? 'Идёт' : 'Пауза'}</span>
+          <span class={'clock-time' + (running ? '' : ' paused')}>{formatDuration(elapsed)}</span>
+        </button>
+        {!workout.finished && (
+          <button class="clock-btn" onClick={toggleClock} aria-label={running ? 'пауза' : 'продолжить'}>
+            {running ? 'Ⅱ' : '▶'}
+          </button>
+        )}
+        <div class="stat">
+          <span class="stat-label">Объём</span>
+          <span class="stat-value">{formatVolume(volume)}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Упражнения</span>
+          <span class="stat-value">
+            {done}/{workout.items.length}
+          </span>
+        </div>
+      </section>
 
       <section class={'card phase' + (workout.warmupDone ? ' done' : '')}>
         <div class="phase-text">
@@ -93,6 +136,7 @@ export function WorkoutScreen({ id }: { id: number }) {
             onChange={(n) => setItem(i, n)}
             onDelete={() => patch({ items: current.current!.items.filter((_, j) => j !== i) })}
             onMove={(d) => move(i, d)}
+            hint={hintFor(prev?.items.find((p) => p.exerciseId === it.exerciseId), ex)}
           />
         );
       })}
@@ -120,14 +164,14 @@ export function WorkoutScreen({ id }: { id: number }) {
       </label>
 
       {workout.finished ? (
-        <button class="btn wide" onClick={() => patch({ finished: false })}>
+        <button class="btn wide" onClick={() => patch({ finished: false, runningSince: Date.now() })}>
           Вернуть в работу
         </button>
       ) : (
         <button
           class="btn wide primary"
           onClick={async () => {
-            await patch({ finished: true });
+            await patch({ finished: true, ...stopClock() });
             go('today');
           }}
         >
@@ -138,7 +182,51 @@ export function WorkoutScreen({ id }: { id: number }) {
         Удалить тренировку
       </button>
 
+      {editingTime && (
+        <DurationSheet
+          sec={elapsed}
+          onClose={() => setEditingTime(false)}
+          onSave={(sec) => {
+            patch({ durationSec: sec, runningSince: running ? Date.now() : null });
+            setEditingTime(false);
+          }}
+        />
+      )}
       {adding && <AddExerciseSheet exercises={exercises} onPick={add} onClose={() => setAdding(false)} />}
     </div>
+  );
+}
+
+function DurationSheet({ sec, onClose, onSave }: { sec: number; onClose: () => void; onSave: (sec: number) => void }) {
+  const [h, setH] = useState(Math.floor(sec / 3600));
+  const [m, setM] = useState(Math.floor((sec % 3600) / 60));
+  return (
+    <Sheet title="Длительность тренировки" onClose={onClose}>
+      <div class="form-row">
+        <span>Часы</span>
+        <Stepper value={h} onChange={(v) => setH(Math.min(9, Math.floor(v)))} />
+      </div>
+      <div class="form-row">
+        <span>Минуты</span>
+        <Stepper
+          value={m}
+          onChange={(v) => setM(Math.floor(v))}
+          onStep={(dir) => {
+            const total = Math.max(0, h * 60 + m + dir);
+            setH(Math.floor(total / 60));
+            return total % 60;
+          }}
+        />
+      </div>
+      <p class="muted small">Если таймер идёт, он продолжит считать от нового значения.</p>
+      <div class="sheet-actions">
+        <button class="btn" onClick={onClose}>
+          Отмена
+        </button>
+        <button class="btn primary" onClick={() => onSave(Math.max(0, h * 3600 + Math.min(59, m) * 60))}>
+          Сохранить
+        </button>
+      </div>
+    </Sheet>
   );
 }

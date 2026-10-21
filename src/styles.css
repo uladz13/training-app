@@ -134,3 +134,26 @@ main { max-width: 640px; margin: 0 auto; }
 .cal-day.today { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; color: var(--text); }
 .cal-day.sel { outline: 2px solid #f0d58a; outline-offset: -2px; }
 .list-caption { padding: 0 4px; }
+
+.hint { border-radius: 10px; padding: 10px 12px; font-size: 14px; display: flex; flex-direction: column; gap: 8px; }
+.hint p { margin: 0; }
+.hint-up { background: #163327; color: #b9f0da; }
+.hint-alt { background: #2b2615; color: #f0d58a; }
+.hint-hold, .hint-info { background: var(--card-2); color: #c9d0d6; }
+.hint-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip.accent { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.layout { padding: 0 2px; }
+.calc .seg { margin-bottom: 8px; }
+.calc-weights { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.calc-weights button { padding: 6px 10px; border-radius: 8px; background: var(--card-2); font-size: 14px; font-variant-numeric: tabular-nums; }
+.calc-weights button.on { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+
+.stats-bar { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+.clock { display: flex; flex-direction: column; align-items: flex-start; padding: 0; text-align: left; }
+.clock-time { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.clock-time.paused { color: var(--muted); }
+.clock-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--card-2); font-size: 16px; flex: none; }
+.stat { display: flex; flex-direction: column; margin-left: auto; text-align: right; }
+.stat + .stat { margin-left: 8px; }
+.stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.stat-value { font-weight: 700; font-variant-numeric: tabular-nums; }

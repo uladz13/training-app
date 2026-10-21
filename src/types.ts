@@ -55,6 +55,8 @@ export interface WorkoutItem {
   restSec: number;
   target: Target;
   sets: SetEntry[];
+  /** подсказка прогрессии принята или скрыта */
+  hint?: 'applied' | 'dismissed';
 }
 
 export interface Workout {
@@ -70,6 +72,10 @@ export interface Workout {
   items: WorkoutItem[];
   note: string;
   finished: boolean;
+  /** накопленная длительность, с (без текущего отрезка) */
+  durationSec?: number;
+  /** время запуска текущего отрезка (мс), null — пауза или завершена */
+  runningSince?: number | null;
 }
 
 export interface Meta {

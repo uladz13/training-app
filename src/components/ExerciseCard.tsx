@@ -1,7 +1,8 @@
 import { useState } from 'preact/hooks';
 import type { Exercise, SetEntry, WorkoutItem } from '../types';
 import { Stepper, Check, Sheet } from './ui';
-import { stepWeight } from '../weights';
+import { stepWeight, layoutLabel } from '../weights';
+import type { Hint } from '../progression';
 import { kg, secLabel } from '../util';
 import { emptySet } from '../workoutLogic';
 import { startRest, SET_REST_SEC } from '../timer';
@@ -14,6 +15,7 @@ interface Props {
   onChange: (item: WorkoutItem) => void;
   onDelete: () => void;
   onMove: (dir: -1 | 1) => void;
+  hint?: Hint | null;
 }
 
 function targetLabel(item: WorkoutItem, ex: Exercise): string {
@@ -39,7 +41,7 @@ export function summary(item: WorkoutItem, ex: Exercise): string {
   return w + vals.join(', ');
 }
 
-export function ExerciseCard({ item, ex, index, count, onChange, onDelete, onMove }: Props) {
+export function ExerciseCard({ item, ex, index, count, onChange, onDelete, onMove, hint }: Props) {
   const [showTech, setShowTech] = useState(false);
   const [editing, setEditing] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -85,6 +87,20 @@ export function ExerciseCard({ item, ex, index, count, onChange, onDelete, onMov
     onChange({ ...item, sets: item.sets.slice(0, -1) });
   };
 
+  const applyHint = () => {
+    if (!hint?.apply) return;
+    const { w, reps } = hint.apply;
+    const sets = item.sets.map((s) => ({
+      ...s,
+      w,
+      ...(ex.perSide ? { l: reps, r: reps } : { v: reps }),
+      done: false
+    }));
+    onChange({ ...item, sets, done: false, hint: 'applied' });
+  };
+  const showHint = !!hint && !item.hint && !item.done && !item.sets.some((s) => s.done);
+  const layoutW = (item.sets.find((s) => !s.done) ?? item.sets[item.sets.length - 1])?.w;
+
   const valueStep = ex.kind === 'time' ? 5 : 1;
   const fmtVal = (v: number | undefined) => (ex.kind === 'time' ? `${v ?? 0} с` : `${v ?? 0}`);
 
@@ -103,6 +119,22 @@ export function ExerciseCard({ item, ex, index, count, onChange, onDelete, onMov
           {ex.technique.split('\n').map((p) => (
             <p>{p}</p>
           ))}
+        </div>
+      )}
+
+      {showHint && hint && (
+        <div class={'hint hint-' + hint.tone}>
+          <p>{hint.text}</p>
+          <div class="hint-actions">
+            {hint.apply && (
+              <button class="chip accent" onClick={applyHint}>
+                Применить {ex.equipment === 'db2' ? `2 × ${kg(hint.apply.w)}` : kg(hint.apply.w)} кг
+              </button>
+            )}
+            <button class="chip" onClick={() => onChange({ ...item, hint: 'dismissed' })}>
+              {hint.apply ? 'Оставить как есть' : 'Понятно'}
+            </button>
+          </div>
         </div>
       )}
 
@@ -148,6 +180,11 @@ export function ExerciseCard({ item, ex, index, count, onChange, onDelete, onMov
               </div>
             ))}
           </div>
+          {ex.equipment !== 'none' && layoutW != null && layoutW > 0 && (
+            <div class="layout muted small">
+              {ex.equipment === 'db2' ? 'Каждая гантель' : ex.equipment === 'barbell' ? 'Штанга' : 'Гантель'} {kg(layoutW)} кг: {layoutLabel(ex.equipment, layoutW)}
+            </div>
+          )}
           <footer class="ex-actions">
             <button class="chip" onClick={addSet}>
               + подход

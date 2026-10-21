@@ -72,6 +72,9 @@ const BY_DAY: Record<number, Row[]> = {
   ]
 };
 
+/** Длительность каждой тренировки стартовой истории — 50 минут. */
+export const SEED_DURATION_SEC = 50 * 60;
+
 const SEED_DATES = [
   '2026-10-12', '2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16',
   '2026-10-17', '2026-10-18', '2026-10-19', '2026-10-20', '2026-10-21'
@@ -108,7 +111,9 @@ export function buildSeedWorkouts(exercises: Exercise[]): Workout[] {
       cooldownDone: true,
       items,
       note: 'Стартовые данные',
-      finished: true
+      finished: true,
+      durationSec: SEED_DURATION_SEC,
+      runningSince: null
     };
   });
 }

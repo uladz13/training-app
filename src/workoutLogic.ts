@@ -59,7 +59,9 @@ export async function createWorkout(date: string, day = isoDay(date)): Promise<n
     cooldownDone: false,
     items,
     note: '',
-    finished: false
+    finished: false,
+    durationSec: 0,
+    runningSince: Date.now()
   };
   return db.workouts.add(w);
 }

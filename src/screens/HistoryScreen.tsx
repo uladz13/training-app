@@ -4,6 +4,7 @@ import { useLive } from '../hooks';
 import { DAY_SHORT, formatDate, todayIso } from '../util';
 import { go } from '../router';
 import type { Workout } from '../types';
+import { durationShort, elapsedSec, formatVolume, workoutVolume } from '../stats';
 
 const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -73,11 +74,13 @@ function Calendar({
 
 export function HistoryScreen() {
   const workouts = useLive(() => db.workouts.orderBy('date').reverse().toArray(), []);
+  const exercises = useLive(() => db.exercises.toArray(), []);
   const now = new Date();
   const [ym, setYm] = useState({ y: now.getFullYear(), m: now.getMonth() });
   const [selected, setSelected] = useState<string | null>(null);
-  if (!workouts) return <div class="loading">Загрузка…</div>;
+  if (!workouts || !exercises) return <div class="loading">Загрузка…</div>;
 
+  const exById = new Map(exercises.map((e) => [e.id, e]));
   const byDate = new Map<string, Workout[]>();
   for (const w of workouts) byDate.set(w.date, [...(byDate.get(w.date) ?? []), w]);
 
@@ -123,7 +126,8 @@ export function HistoryScreen() {
             <div class="hist-main">
               <div>{w.title}</div>
               <div class="muted small">
-                {done}/{w.items.length} упражнений{w.finished ? '' : ' · не завершена'}
+                {durationShort(elapsedSec(w))} · {formatVolume(workoutVolume(w, exById))} · {done}/{w.items.length} упр.
+                {w.finished ? '' : ' · не завершена'}
               </div>
             </div>
             <span class="arrow">›</span>

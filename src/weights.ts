@@ -40,3 +40,31 @@ export function stepWeight(eq: Equipment, current: number | undefined, dir: 1 | 
   for (let i = list.length - 1; i >= 0; i--) if (list[i] < cur - 1e-9) return list[i];
   return list[0];
 }
+
+/** Раскладка блинов на одну сторону снаряда (от тяжёлых к лёгким) или null, если вес не собирается. */
+export function layoutFor(eq: Equipment, total: number): number[] | null {
+  if (eq === 'none') return null;
+  const implements_ = eq === 'db2' ? 2 : 1;
+  const target = Math.round((total / 2) * 100);
+  const perSide = PLATES.map((p) => ({ kg: p.kg, c: Math.round(p.kg * 100), max: Math.floor(p.count / (2 * implements_)) }));
+  let best: number[] | null = null;
+  const rec = (i: number, sum: number, acc: number[]) => {
+    if (sum > target) return;
+    if (i === perSide.length) {
+      if (sum === target && (!best || acc.length < best.length)) best = [...acc];
+      return;
+    }
+    for (let n = perSide[i].max; n >= 0; n--) {
+      rec(i + 1, sum + n * perSide[i].c, [...acc, ...Array(n).fill(perSide[i].kg)]);
+    }
+  };
+  rec(0, 0, []);
+  return best;
+}
+
+export function layoutLabel(eq: Equipment, total: number): string {
+  const l = layoutFor(eq, total);
+  if (!l) return 'не собирается симметрично';
+  if (l.length === 0) return 'без блинов';
+  return l.map((x) => String(x).replace('.', ',')).join(' + ') + ' с каждой стороны';
+}

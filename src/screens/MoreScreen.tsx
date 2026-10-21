@@ -3,7 +3,8 @@ import { db, requestPersistence } from '../db';
 import { useLive } from '../hooks';
 import { exportBackup, importBackup } from '../backup';
 import { DAY_NAMES, kg } from '../util';
-import { availableWeights } from '../weights';
+import { availableWeights, layoutLabel } from '../weights';
+import type { Equipment } from '../types';
 
 export function MoreScreen() {
   const [msg, setMsg] = useState('');
@@ -62,16 +63,7 @@ export function MoreScreen() {
         </p>
       </section>
 
-      <section class="card">
-        <h2>Инвентарь</h2>
-        <p class="muted small">Блины: 8 × 3 кг, 4 × 2,5 кг, 4 × 1,25 кг. Грифы — 0 кг.</p>
-        <p class="small">
-          <strong>Пара гантелей:</strong> {availableWeights('db2').filter(Boolean).map(kg).join(' · ')}
-        </p>
-        <p class="small">
-          <strong>Одна гантель / штанга:</strong> {availableWeights('db1').filter(Boolean).map(kg).join(' · ')}
-        </p>
-      </section>
+      <WeightCalc />
 
       <section class="card">
         <h2>Программа</h2>
@@ -95,7 +87,44 @@ export function MoreScreen() {
         ))}
       </section>
 
-      <p class="muted small center">Тренировки · версия 0.1.2</p>
+      <p class="muted small center">Тренировки · версия 0.2.0</p>
     </div>
+  );
+}
+
+const MODES: [Equipment, string][] = [
+  ['db2', 'Пара гантелей'],
+  ['db1', 'Одна гантель'],
+  ['barbell', 'Штанга']
+];
+
+function WeightCalc() {
+  const [eq, setEq] = useState<Equipment>('db2');
+  const [w, setW] = useState<number | null>(null);
+  const list = availableWeights(eq).filter(Boolean);
+  return (
+    <section class="card calc">
+      <h2>Калькулятор весов</h2>
+      <p class="muted small">Блины: 8 × 3 кг, 4 × 2,5 кг, 4 × 1,25 кг. Грифы — 0 кг. Только симметричная сборка.</p>
+      <div class="seg">
+        {MODES.map(([k, l]) => (
+          <button class={eq === k ? 'on' : ''} onClick={() => { setEq(k); setW(null); }}>
+            {l}
+          </button>
+        ))}
+      </div>
+      <div class="calc-weights">
+        {list.map((x) => (
+          <button class={w === x ? 'on' : ''} onClick={() => setW(x)}>
+            {kg(x)}
+          </button>
+        ))}
+      </div>
+      <p class="small">
+        {w == null
+          ? eq === 'db2' ? 'Вес одной гантели в паре, кг. Нажми на вес, чтобы увидеть раскладку.' : 'Нажми на вес, чтобы увидеть раскладку.'
+          : <><strong>{kg(w)} кг</strong>{eq === 'db2' ? ' (каждая гантель)' : ''}: {layoutLabel(eq, w)}</>}
+      </p>
+    </section>
   );
 }

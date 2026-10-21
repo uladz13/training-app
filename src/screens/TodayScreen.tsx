@@ -8,6 +8,7 @@ import { go } from '../router';
 import { summary } from '../components/ExerciseCard';
 import { daysSinceBackup, exportBackup } from '../backup';
 import type { WorkoutItem } from '../types';
+import { durationShort, elapsedSec, formatVolume, workoutVolume } from '../stats';
 
 export function TodayScreen() {
   const date = todayIso();
@@ -55,7 +56,7 @@ export function TodayScreen() {
               <div class="eyebrow">{w.finished ? 'Завершена' : 'В процессе'}</div>
               <div class="today-title">{w.title}</div>
               <div class="muted">
-                Упражнений выполнено: {done} из {w.items.length}
+                {done} из {w.items.length} упр. · {durationShort(elapsedSec(w))} · {formatVolume(workoutVolume(w, byId))}
               </div>
             </div>
             <span class="arrow">›</span>

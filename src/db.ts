@@ -2,7 +2,7 @@ import Dexie, { type Table } from 'dexie';
 import type { DayTemplate, Exercise, Meta, Workout } from './types';
 import { EXERCISES } from './data/exercises';
 import { PROGRAM } from './data/program';
-import { buildSeedWorkouts } from './data/seed';
+import { buildSeedWorkouts, SEED_DURATION_SEC } from './data/seed';
 
 class AppDB extends Dexie {
   exercises!: Table<Exercise, string>;
@@ -18,12 +18,24 @@ class AppDB extends Dexie {
       workouts: '++id, date, day',
       meta: 'key'
     });
+    // v2: длительность тренировки. Стартовой истории — 50 минут, остальным — 0, таймер на паузе.
+    this.version(2)
+      .stores({})
+      .upgrade((tx) =>
+        tx
+          .table('workouts')
+          .toCollection()
+          .modify((w: Workout) => {
+            if (w.durationSec == null) w.durationSec = w.note === 'Стартовые данные' ? SEED_DURATION_SEC : 0;
+            if (w.runningSince === undefined) w.runningSince = null;
+          })
+      );
   }
 }
 
 export const db = new AppDB();
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /** Первичное наполнение: каталог, программа, стартовая история. */
 export async function initDb(): Promise<void> {
