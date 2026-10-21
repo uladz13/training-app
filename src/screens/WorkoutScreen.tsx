@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { db } from '../db';
 import { useLive, useWakeLock } from '../hooks';
 import type { Exercise, Workout, WorkoutItem } from '../types';
@@ -10,7 +10,15 @@ import { itemForExercise } from '../workoutLogic';
 import { go } from '../router';
 
 export function WorkoutScreen({ id }: { id: number }) {
-  const workout = useLive(() => db.workouts.get(id), [id]);
+  // Локальное состояние: интерфейс обновляется сразу, запись в базу идёт фоном.
+  const [workout, setWorkout] = useState<Workout | null | undefined>(undefined);
+  const current = useRef<Workout | null>(null);
+  useEffect(() => {
+    db.workouts.get(id).then((w) => {
+      current.current = w ?? null;
+      setWorkout(w ?? null);
+    });
+  }, [id]);
   const exercises = useLive(() => db.exercises.toArray(), []);
   const [adding, setAdding] = useState(false);
   useWakeLock(!!workout && !workout.finished);
@@ -19,13 +27,18 @@ export function WorkoutScreen({ id }: { id: number }) {
   if (!workout) return <div class="empty">Тренировка не найдена.</div>;
 
   const byId = new Map(exercises.map((e) => [e.id, e]));
-  const save = (w: Workout) => db.workouts.put(w);
-  const patch = (p: Partial<Workout>) => save({ ...workout, ...p });
-  const setItem = (i: number, it: WorkoutItem) => patch({ items: workout.items.map((x, j) => (j === i ? it : x)) });
+  const patch = (p: Partial<Workout>) => {
+    const next = { ...current.current!, ...p };
+    current.current = next;
+    setWorkout(next);
+    return db.workouts.put(next);
+  };
+  const setItem = (i: number, it: WorkoutItem) =>
+    patch({ items: current.current!.items.map((x, j) => (j === i ? it : x)) });
   const done = workout.items.filter((i) => i.done).length;
 
   const move = (i: number, dir: -1 | 1) => {
-    const items = [...workout.items];
+    const items = [...current.current!.items];
     const j = i + dir;
     if (j < 0 || j >= items.length) return;
     [items[i], items[j]] = [items[j], items[i]];
@@ -34,7 +47,7 @@ export function WorkoutScreen({ id }: { id: number }) {
 
   const add = async (ex: Exercise) => {
     const it = await itemForExercise(ex);
-    await patch({ items: [...workout.items, it] });
+    await patch({ items: [...current.current!.items, it] });
     setAdding(false);
   };
 
@@ -78,7 +91,7 @@ export function WorkoutScreen({ id }: { id: number }) {
             index={i}
             count={workout.items.length}
             onChange={(n) => setItem(i, n)}
-            onDelete={() => patch({ items: workout.items.filter((_, j) => j !== i) })}
+            onDelete={() => patch({ items: current.current!.items.filter((_, j) => j !== i) })}
             onMove={(d) => move(i, d)}
           />
         );

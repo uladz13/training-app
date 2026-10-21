@@ -4,7 +4,7 @@ import { Stepper, Check, Sheet } from './ui';
 import { stepWeight } from '../weights';
 import { kg, secLabel } from '../util';
 import { emptySet } from '../workoutLogic';
-import { startRest } from '../timer';
+import { startRest, SET_REST_SEC } from '../timer';
 
 interface Props {
   item: WorkoutItem;
@@ -23,7 +23,7 @@ function targetLabel(item: WorkoutItem, ex: Exercise): string {
   const r = ex.kind === 'time' && t.max >= 120 ? `${secLabel(t.min)}–${secLabel(t.max)}` : range + unit;
   const parts = [`${t.sets} × ${r}`];
   if (ex.perSide) parts.push('на сторону');
-  if (item.restSec) parts.push(`отдых ${secLabel(item.restSec)}`);
+  parts.push(`отдых ${SET_REST_SEC} с` + (item.restSec ? `, после — ${secLabel(item.restSec)}` : ''));
   return parts.join(' · ');
 }
 
@@ -62,8 +62,11 @@ export function ExerciseCard({ item, ex, index, count, onChange, onDelete, onMov
     const sets = item.sets.map((x, j) => (j === i ? { ...x, done } : x));
     const allDone = sets.every((x) => x.done);
     onChange({ ...item, sets, done: allDone ? true : item.done && done });
-    if (done && !(allDone && i === sets.length - 1)) startRest(item.restSec, ex.name);
-    else if (done && allDone) startRest(item.restSec, 'Следующее упражнение');
+    // Таймер только информирует: между подходами — 20 с, после последнего — отдых упражнения.
+    if (done) {
+      if (allDone) startRest(item.restSec, 'до следующего упражнения');
+      else startRest(SET_REST_SEC, ex.name);
+    }
   };
 
   const toggleDone = () => {
@@ -226,7 +229,7 @@ function EditItemSheet({
         <Stepper value={t.max} step={unit} onChange={(max) => setT({ ...t, max, min: Math.min(max, t.min) })} />
       </div>
       <div class="form-row">
-        <span>Отдых, с</span>
+        <span>Отдых после упражнения, с</span>
         <Stepper value={rest} step={15} onChange={setRest} />
       </div>
       <div class="sheet-actions">

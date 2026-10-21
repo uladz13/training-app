@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'preact/hooks';
 
+/** Отдых между подходами одного упражнения, с */
+export const SET_REST_SEC = 20;
+
 interface TimerState {
   endsAt: number | null;
   total: number;
