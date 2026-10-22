@@ -5,6 +5,7 @@ import { DAY_SHORT, formatDate, todayIso } from '../util';
 import { go } from '../router';
 import type { Workout } from '../types';
 import { durationShort, elapsedSec, formatVolume, workoutVolume } from '../stats';
+import { AddWorkoutSheet } from '../components/AddWorkoutSheet';
 
 const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -78,6 +79,7 @@ export function HistoryScreen() {
   const now = new Date();
   const [ym, setYm] = useState({ y: now.getFullYear(), m: now.getMonth() });
   const [selected, setSelected] = useState<string | null>(null);
+  const [adding, setAdding] = useState<string | null>(null);
   if (!workouts || !exercises) return <div class="loading">Загрузка…</div>;
 
   const exById = new Map(exercises.map((e) => [e.id, e]));
@@ -105,16 +107,27 @@ export function HistoryScreen() {
         <div class="progress-pill">{workouts.length}</div>
       </div>
       <Calendar year={ym.y} month={ym.m} byDate={byDate} selected={selected} onSelect={select} onMonth={changeMonth} />
+      <button class="btn ghost wide" onClick={() => setAdding(selected ?? todayIso())}>
+        + Тренировка за другую дату
+      </button>
       <div class="muted small list-caption">
         {selected ? formatDate(selected) : `${MONTHS[ym.m]} — все тренировки`}
         {selected && (
-          <button class="link" onClick={() => setSelected(null)}>
-            {' '}
-            показать месяц
-          </button>
+          <>
+            {' · '}
+            <button class="link" onClick={() => setSelected(null)}>
+              показать месяц
+            </button>
+          </>
         )}
       </div>
       {list.length === 0 && <div class="empty">{selected ? 'В этот день тренировки не было.' : 'В этом месяце тренировок нет.'}</div>}
+      {selected && list.length === 0 && selected <= todayIso() && (
+        <button class="btn wide primary" onClick={() => setAdding(selected)}>
+          Добавить тренировку на эту дату
+        </button>
+      )}
+      {adding && <AddWorkoutSheet initialDate={adding} onClose={() => setAdding(null)} />}
       {list.map((w) => {
         const done = w.items.filter((i) => i.done).length;
         return (

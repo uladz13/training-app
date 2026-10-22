@@ -78,7 +78,7 @@ export function MoreScreen() {
         </button>
       </section>
 
-      <p class="muted small center">Тренировки · версия 0.5.1</p>
+      <p class="muted small center">Тренировки · версия 0.6.0</p>
     </div>
   );
 }

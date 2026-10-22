@@ -7,7 +7,7 @@ import { AddExerciseSheet } from '../components/AddExerciseSheet';
 import { Check, Sheet, Stepper } from '../components/ui';
 import { elapsedSec, formatDuration, formatVolume, workoutVolume } from '../stats';
 import { DAY_NAMES, formatDate } from '../util';
-import { itemForExercise } from '../workoutLogic';
+import { clockStart, itemForExercise } from '../workoutLogic';
 import { go } from '../router';
 import { isoDay } from '../data/seed';
 import { hintFor } from '../progression';
@@ -164,7 +164,7 @@ export function WorkoutScreen({ id }: { id: number }) {
       </label>
 
       {workout.finished ? (
-        <button class="btn wide" onClick={() => patch({ finished: false, runningSince: Date.now() })}>
+        <button class="btn wide" onClick={() => patch({ finished: false, runningSince: clockStart(workout.date) })}>
           Вернуть в работу
         </button>
       ) : (

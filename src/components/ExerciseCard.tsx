@@ -74,8 +74,12 @@ export function ExerciseCard({ item, ex, index, count, onChange, onDelete, onMov
 
   const toggleDone = () => {
     const done = !item.done;
-    onChange({ ...item, done });
+    // Отметка упражнения отмечает и все подходы; снятие отметки подходы не трогает.
+    const hadOpen = item.sets.some((s) => !s.done);
+    const sets = done ? item.sets.map((s) => (s.done ? s : { ...s, done: true })) : item.sets;
+    onChange({ ...item, done, sets });
     setExpanded(false);
+    if (done && hadOpen) startRest(item.restSec, 'до следующего упражнения');
   };
 
   const addSet = () => {

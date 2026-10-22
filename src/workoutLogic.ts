@@ -1,7 +1,7 @@
 import { db } from './db';
 import type { Exercise, Workout, WorkoutItem, SetEntry, Target } from './types';
 import { isoDay } from './data/seed';
-import { uid } from './util';
+import { todayIso, uid } from './util';
 
 export function emptySet(ex: Exercise, w?: number, value?: number): SetEntry {
   return {
@@ -55,8 +55,16 @@ export async function planItems(date: string, day: number): Promise<{ items: Wor
   return { items, prevDate: prevSameDay?.date };
 }
 
-/** Создать тренировку по плану на дату. */
-export async function createWorkout(date: string, day = isoDay(date)): Promise<number> {
+/** Старт таймера длительности: для прошедшей даты таймер не запускается — длительность вводится вручную. */
+export function clockStart(date: string): number | null {
+  return date < todayIso() ? null : Date.now();
+}
+
+/** Длительность по умолчанию для тренировки, добавленной на прошедшую дату. */
+export const PAST_DURATION_MIN = 50;
+
+/** Создать тренировку по плану на дату; для прошедшей даты — с длительностью (по умолчанию 50 мин) и без таймера. */
+export async function createWorkout(date: string, day = isoDay(date), pastDurationMin = PAST_DURATION_MIN): Promise<number> {
   const tpl = await db.templates.get(day);
   if (!tpl) throw new Error('Нет шаблона для дня ' + day);
   const { items } = await planItems(date, day);
@@ -71,8 +79,8 @@ export async function createWorkout(date: string, day = isoDay(date)): Promise<n
     items,
     note: '',
     finished: false,
-    durationSec: 0,
-    runningSince: Date.now()
+    durationSec: date < todayIso() ? Math.max(0, Math.round(pastDurationMin)) * 60 : 0,
+    runningSince: clockStart(date)
   };
   return db.workouts.add(w);
 }
