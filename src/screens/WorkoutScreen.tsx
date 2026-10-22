@@ -39,6 +39,14 @@ export function WorkoutScreen({ id }: { id: number }) {
     const t = window.setInterval(() => setTick((n) => n + 1), 1000);
     return () => clearInterval(t);
   }, [workout?.runningSince]);
+  // Шапка закреплена; при прокрутке — компактная. Разные пороги, чтобы не мигала на границе.
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setCompact((c) => (c ? window.scrollY > 8 : window.scrollY > 56));
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   if (workout === undefined || !exercises) return <div class="loading">Загрузка…</div>;
   if (!workout) return <div class="empty">Тренировка не найдена.</div>;
@@ -84,36 +92,38 @@ export function WorkoutScreen({ id }: { id: number }) {
 
   return (
     <div class="screen">
-      <div class="screen-head">
-        <div>
-          <div class="eyebrow">
-            {DAY_NAMES[isoDay(workout.date)]}, {formatDate(workout.date)}
+      <div class={'workout-top' + (compact ? ' compact' : '')}>
+        <div class="screen-head">
+          <div>
+            <div class="eyebrow">
+              {DAY_NAMES[isoDay(workout.date)]}, {formatDate(workout.date)}
+            </div>
+            <h1>{workout.title}</h1>
           </div>
-          <h1>{workout.title}</h1>
         </div>
-      </div>
 
-      <section class="card stats-bar">
-        <button class="clock" onClick={() => setEditingTime(true)} aria-label="изменить длительность">
-          <span class="stat-label">{workout.finished ? 'Длительность' : running ? 'Идёт' : 'Пауза'}</span>
-          <span class={'clock-time' + (running ? '' : ' paused')}>{formatDuration(elapsed)}</span>
-        </button>
-        {!workout.finished && (
-          <button class="clock-btn" onClick={toggleClock} aria-label={running ? 'пауза' : 'продолжить'}>
-            {running ? 'Ⅱ' : '▶'}
+        <section class="card stats-bar">
+          <button class="clock" onClick={() => setEditingTime(true)} aria-label="изменить длительность">
+            <span class="stat-label">{workout.finished ? 'Длительность' : running ? 'Идёт' : 'Пауза'}</span>
+            <span class={'clock-time' + (running ? '' : ' paused')}>{formatDuration(elapsed)}</span>
           </button>
-        )}
-        <div class="stat">
-          <span class="stat-label">Объём</span>
-          <span class="stat-value">{formatVolume(volume)}</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Упражнения</span>
-          <span class="stat-value">
-            {done}/{workout.items.length}
-          </span>
-        </div>
-      </section>
+          {!workout.finished && (
+            <button class="clock-btn" onClick={toggleClock} aria-label={running ? 'пауза' : 'продолжить'}>
+              {running ? 'Ⅱ' : '▶'}
+            </button>
+          )}
+          <div class="stat">
+            <span class="stat-label">Объём</span>
+            <span class="stat-value">{formatVolume(volume)}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Упражнения</span>
+            <span class="stat-value">
+              {done}/{workout.items.length}
+            </span>
+          </div>
+        </section>
+      </div>
 
       <section class={'card phase' + (workout.warmupDone ? ' done' : '')}>
         <div class="phase-text">
