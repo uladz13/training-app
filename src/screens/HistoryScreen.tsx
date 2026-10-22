@@ -6,6 +6,7 @@ import { go } from '../router';
 import type { Workout } from '../types';
 import { durationShort, elapsedSec, formatVolume, workoutVolume } from '../stats';
 import { AddWorkoutSheet } from '../components/AddWorkoutSheet';
+import { ShowMore, useShowMore } from '../components/ShowMore';
 
 const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -80,6 +81,7 @@ export function HistoryScreen() {
   const [ym, setYm] = useState({ y: now.getFullYear(), m: now.getMonth() });
   const [selected, setSelected] = useState<string | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
+  const [shown, showMore] = useShowMore(`${ym.y}-${ym.m}`);
   if (!workouts || !exercises) return <div class="loading">Загрузка…</div>;
 
   const exById = new Map(exercises.map((e) => [e.id, e]));
@@ -87,7 +89,9 @@ export function HistoryScreen() {
   for (const w of workouts) byDate.set(w.date, [...(byDate.get(w.date) ?? []), w]);
 
   const monthKey = `${ym.y}-${pad(ym.m + 1)}`;
-  const list = selected ? byDate.get(selected) ?? [] : workouts.filter((w) => w.date.startsWith(monthKey));
+  const all = selected ? byDate.get(selected) ?? [] : workouts.filter((w) => w.date.startsWith(monthKey));
+  // Месяц — по 7 с «Показать ещё»; выбранный день — все его тренировки.
+  const list = selected ? all : all.slice(0, shown);
 
   const changeMonth = (dir: -1 | 1) => {
     const d = new Date(ym.y, ym.m + dir, 1);
@@ -147,6 +151,7 @@ export function HistoryScreen() {
           </button>
         );
       })}
+      {!selected && <ShowMore shown={shown} total={all.length} onMore={showMore} />}
     </div>
   );
 }

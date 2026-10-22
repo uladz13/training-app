@@ -4,6 +4,7 @@ import { useLive } from '../hooks';
 import { LineChart } from '../components/LineChart';
 import { ProgressTabs } from '../components/RangePicker';
 import { Sheet, Stepper } from '../components/ui';
+import { ShowMore, useShowMore } from '../components/ShowMore';
 import { fmt1, weightSeries, lastWith, waistDue } from '../body';
 import { formatDate, todayIso } from '../util';
 import type { BodyEntry } from '../types';
@@ -22,6 +23,7 @@ export function BodyScreen() {
   // Период графиков: по умолчанию последние 14 дней (сегодня − 14 … сегодня).
   const [from, setFrom] = useState(shift(today, -DEFAULT_RANGE_DAYS));
   const [to, setTo] = useState(today);
+  const [shown, showMore] = useShowMore(null);
   if (!entries) return <div class="loading">Загрузка…</div>;
 
   const series = weightSeries(entries);
@@ -114,7 +116,7 @@ export function BodyScreen() {
             </tr>
           </thead>
           <tbody>
-            {list.map((e) => (
+            {list.slice(0, shown).map((e) => (
               <tr onClick={() => setEdit(e)}>
                 <td>{formatDate(e.date)}</td>
                 <td>{fmt1(e.weight)}</td>
@@ -123,6 +125,7 @@ export function BodyScreen() {
             ))}
           </tbody>
         </table>
+        <ShowMore shown={shown} total={list.length} onMore={showMore} />
       </section>
 
       {edit && <EditSheet entry={edit} entries={entries} onClose={() => setEdit(null)} />}
