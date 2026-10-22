@@ -24,6 +24,9 @@ interface Props {
 
 const H = 180;
 const PAD = { l: 34, r: 10, t: 10, b: 22 };
+const DOT_R = 2.5;
+/** точки ближе этого расстояния (px) перекрываются — лишние не рисуем */
+const DOT_GAP = 8;
 const dayNum = (d: string) => Math.round(new Date(d + 'T12:00:00').getTime() / 86400000);
 const fmt = (v: number, d: number) => v.toFixed(d).replace('.', ',');
 
@@ -42,9 +45,11 @@ export function LineChart({ points, line, unit, decimals, pointLabel, lineLabel,
   useEffect(() => {
     const el = box.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setW(el.clientWidth));
+    // До раскладки ширина бывает 0 — такой замер пропускаем, иначе размеры уходят в минус.
+    const measure = () => el.clientWidth > 0 && setW(el.clientWidth);
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
-    setW(el.clientWidth);
+    measure();
     return () => ro.disconnect();
   }, []);
 
@@ -68,6 +73,13 @@ export function LineChart({ points, line, unit, decimals, pointLabel, lineLabel,
   const Y = (v: number) => PAD.t + (1 - (v - y0) / (y1 - y0)) * (H - PAD.t - PAD.b);
   const path = (ps: Pt[]) => ps.map((p, i) => `${i ? 'L' : 'M'}${X(p.date).toFixed(1)},${Y(p.value).toFixed(1)}`).join('');
   const lineData = line ?? points;
+  // Прореживание: идём от последней точки к первой и пропускаем те, что наезжают на уже нарисованную.
+  const dots: Pt[] = [];
+  for (let i = points.length - 1; i >= 0; i--) {
+    const p = points[i];
+    const last = dots[dots.length - 1];
+    if (!last || Math.hypot(X(last.date) - X(p.date), Y(last.value) - Y(p.value)) >= DOT_GAP) dots.push(p);
+  }
 
   const idx = sel ?? points.length - 1;
   const cur = points[idx];
@@ -121,10 +133,10 @@ export function LineChart({ points, line, unit, decimals, pointLabel, lineLabel,
           </text>
         )}
         <line x1={X(cur.date)} x2={X(cur.date)} y1={PAD.t} y2={H - PAD.b} class="crosshair" />
-        {line && points.map((p) => <circle cx={X(p.date)} cy={Y(p.value)} r={4} class="dot-muted" />)}
+        {line && dots.map((p) => <circle cx={X(p.date)} cy={Y(p.value)} r={DOT_R} class="dot-muted" />)}
         <path d={path(lineData)} class="series-line" />
-        {!line && points.map((p) => <circle cx={X(p.date)} cy={Y(p.value)} r={4} class="dot-accent" />)}
-        <circle cx={X(cur.date)} cy={Y(cur.value)} r={5.5} class="dot-sel" />
+        {!line && dots.map((p) => <circle cx={X(p.date)} cy={Y(p.value)} r={DOT_R} class="dot-accent" />)}
+        <circle cx={X(cur.date)} cy={Y(cur.value)} r={4} class="dot-sel" />
       </svg>
       {line && lineLabel && (
         <div class="legend small">

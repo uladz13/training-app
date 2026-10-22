@@ -24,9 +24,11 @@ export function BarChart({ bars, format, title }: { bars: Bar[]; format: (v: num
   useEffect(() => {
     const el = box.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setW(el.clientWidth));
+    // До раскладки ширина бывает 0 — такой замер пропускаем, иначе размеры уходят в минус.
+    const measure = () => el.clientWidth > 0 && setW(el.clientWidth);
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
-    setW(el.clientWidth);
+    measure();
     return () => ro.disconnect();
   }, []);
 

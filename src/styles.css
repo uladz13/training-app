@@ -190,8 +190,8 @@ main { max-width: 640px; margin: 0 auto; }
 .chart .axis { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 .chart .crosshair { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.6; }
 .chart .series-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-.chart .dot-muted { fill: #6b747c; stroke: var(--card); stroke-width: 2; }
-.chart .dot-accent { fill: var(--accent); stroke: var(--card); stroke-width: 2; }
+.chart .dot-muted { fill: #6b747c; stroke: var(--card); stroke-width: 1.5; }
+.chart .dot-accent { fill: var(--accent); stroke: var(--card); stroke-width: 1.5; }
 .chart .dot-sel { fill: var(--text); stroke: var(--card); stroke-width: 2; }
 .legend { display: flex; gap: 16px; color: var(--muted); margin-top: 6px; }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
