@@ -90,7 +90,7 @@ export function WorkoutScreen({ id }: { id: number }) {
   };
 
   const add = async (ex: Exercise) => {
-    const it = await itemForExercise(ex);
+    const it = await itemForExercise(ex, current.current!.date, current.current!.day);
     await patch({ items: [...current.current!.items, it] });
     setAdding(false);
   };
