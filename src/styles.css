@@ -60,6 +60,10 @@ main { max-width: 640px; margin: 0 auto; }
 .ex-icon svg { display: block; }
 .ex-icon.dim { opacity: 0.6; }
 .ex-head > .ex-icon { margin-top: 1px; }
+.ex-card.row { padding-block: 10px; }
+.ex-card.row .ex-head { align-items: center; }
+.ex-card.row .ex-name { font-size: 16px; }
+.ex-back { align-self: flex-start; margin-bottom: 8px; }
 .with-icon { display: flex; align-items: center; gap: 10px; }
 .ex-edit-icon { display: flex; align-items: center; gap: 12px; }
 .icon-picker { display: flex; flex-direction: column; gap: 6px; background: var(--card-2); border-radius: 12px; padding: 10px; }

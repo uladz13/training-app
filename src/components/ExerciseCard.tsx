@@ -17,6 +17,19 @@ interface Props {
   onDelete: () => void;
   onMove: (dir: -1 | 1) => void;
   hint?: Hint | null;
+  /** открыто на весь экран; иначе — свёрнутая строка */
+  open: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+}
+
+/** Цель в свёрнутой строке: «3 × 8–12 · 2×17 кг». */
+function targetShort(item: WorkoutItem, ex: Exercise): string {
+  const t = item.target;
+  const r = ex.kind === 'time' && t.max >= 120 ? `${secLabel(t.min)}–${secLabel(t.max)}` : (t.min === t.max ? `${t.min}` : `${t.min}–${t.max}`) + (ex.kind === 'time' ? ' с' : '');
+  const w = (item.sets.find((s) => !s.done) ?? item.sets[0])?.w;
+  const wl = ex.equipment === 'none' || w == null ? '' : ` · ${ex.equipment === 'db2' ? '2×' : ''}${kg(w)} кг`;
+  return `${t.sets} × ${r}${ex.perSide ? ' на сторону' : ''}${wl}`;
 }
 
 function targetLabel(item: WorkoutItem, ex: Exercise): string {
@@ -42,11 +55,10 @@ export function summary(item: WorkoutItem, ex: Exercise): string {
   return w + vals.join(', ');
 }
 
-export function ExerciseCard({ item, ex, index, count, onChange, onDelete, onMove, hint }: Props) {
+export function ExerciseCard({ item, ex, index, count, onChange, onDelete, onMove, hint, open, onOpen, onClose }: Props) {
   const [showTech, setShowTech] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const collapsed = item.done && !expanded;
+  const collapsed = !open;
 
   const setSet = (i: number, patch: Partial<SetEntry>) => {
     const sets = item.sets.map((s, j) => (j === i ? { ...s, ...patch } : s));
@@ -70,6 +82,8 @@ export function ExerciseCard({ item, ex, index, count, onChange, onDelete, onMov
       if (allDone) startRest(item.restSec, 'до следующего упражнения');
       else startRest(SET_REST_SEC, ex.name);
     }
+    // Все подходы отмечены — упражнение сворачивается.
+    if (done && allDone) onClose();
   };
 
   const toggleDone = () => {
@@ -78,8 +92,8 @@ export function ExerciseCard({ item, ex, index, count, onChange, onDelete, onMov
     const hadOpen = item.sets.some((s) => !s.done);
     const sets = done ? item.sets.map((s) => (s.done ? s : { ...s, done: true })) : item.sets;
     onChange({ ...item, done, sets });
-    setExpanded(false);
     if (done && hadOpen) startRest(item.restSec, 'до следующего упражнения');
+    if (done) onClose();
   };
 
   const addSet = () => {
@@ -103,19 +117,24 @@ export function ExerciseCard({ item, ex, index, count, onChange, onDelete, onMov
     }));
     onChange({ ...item, sets, done: false, hint: 'applied' });
   };
-  const showHint = !!hint && !item.hint && !item.done && !item.sets.some((s) => s.done);
+  const showHint = open && !!hint && !item.hint && !item.done && !item.sets.some((s) => s.done);
   const layoutW = (item.sets.find((s) => !s.done) ?? item.sets[item.sets.length - 1])?.w;
 
   const valueStep = ex.kind === 'time' ? 5 : 1;
   const fmtVal = (v: number | undefined) => (ex.kind === 'time' ? `${v ?? 0} с` : `${v ?? 0}`);
 
   return (
-    <section class={'card ex-card' + (item.done ? ' done' : '')}>
+    <section class={'card ex-card' + (item.done ? ' done' : '') + (open ? ' open' : ' row')}>
+      {open && (
+        <button class="link ex-back" onClick={onClose}>
+          ‹ Свернуть
+        </button>
+      )}
       <header class="ex-head">
-        <ExerciseIcon ex={ex} size={collapsed ? 24 : 32} class={collapsed ? 'dim' : ''} />
-        <button class="ex-title" onClick={() => (collapsed ? setExpanded(true) : setShowTech((v) => !v))}>
+        <ExerciseIcon ex={ex} size={collapsed ? 28 : 32} class={collapsed && item.done ? 'dim' : ''} />
+        <button class="ex-title" onClick={() => (collapsed ? onOpen() : setShowTech((v) => !v))}>
           <span class="ex-name">{ex.name}</span>
-          <span class="ex-target">{collapsed ? summary(item, ex) : targetLabel(item, ex)}</span>
+          <span class="ex-target">{open ? targetLabel(item, ex) : item.done ? summary(item, ex) : targetShort(item, ex)}</span>
         </button>
         <Check checked={item.done} onClick={toggleDone} label="упражнение выполнено" />
       </header>
@@ -207,11 +226,6 @@ export function ExerciseCard({ item, ex, index, count, onChange, onDelete, onMov
             <button class="chip" onClick={() => (location.hash = '#/exercise/' + encodeURIComponent(ex.id))}>
               График
             </button>
-            {item.done && (
-              <button class="chip" onClick={() => setExpanded(false)}>
-                Свернуть
-              </button>
-            )}
           </footer>
         </>
       )}

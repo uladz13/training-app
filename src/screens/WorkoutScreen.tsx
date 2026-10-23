@@ -41,6 +41,18 @@ export function WorkoutScreen({ id }: { id: number }) {
   }, [workout?.runningSince]);
   // Шапка закреплена; при прокрутке — компактная. Разные пороги, чтобы не мигала на границе.
   const [compact, setCompact] = useState(false);
+  // Открытое на весь экран упражнение; при закрытии — возврат к прежнему месту списка.
+  const [openUid, setOpenUid] = useState<string | null>(null);
+  const listScroll = useRef(0);
+  const openItem = (uid: string) => {
+    listScroll.current = window.scrollY;
+    setOpenUid(uid);
+    window.scrollTo(0, 0);
+  };
+  const closeItem = () => {
+    setOpenUid(null);
+    requestAnimationFrame(() => window.scrollTo(0, listScroll.current));
+  };
   useEffect(() => {
     const onScroll = () => setCompact((c) => (c ? window.scrollY > 8 : window.scrollY > 56));
     onScroll();
@@ -81,6 +93,32 @@ export function WorkoutScreen({ id }: { id: number }) {
     const it = await itemForExercise(ex);
     await patch({ items: [...current.current!.items, it] });
     setAdding(false);
+  };
+
+  const openIdx = workout.items.findIndex((it) => it.uid === openUid);
+  const card = (i: number) => {
+    const it = workout.items[i];
+    const ex = byId.get(it.exerciseId);
+    if (!ex) return null;
+    return (
+      <ExerciseCard
+        key={it.uid}
+        item={it}
+        ex={ex}
+        index={i}
+        count={workout.items.length}
+        onChange={(n) => setItem(i, n)}
+        onDelete={() => {
+          if (openUid === it.uid) closeItem();
+          patch({ items: current.current!.items.filter((_, j) => j !== i) });
+        }}
+        onMove={(d) => move(i, d)}
+        hint={hintFor(prev?.items.find((p) => p.exerciseId === it.exerciseId), ex)}
+        open={openUid === it.uid}
+        onOpen={() => openItem(it.uid)}
+        onClose={closeItem}
+      />
+    );
   };
 
   const remove = async () => {
@@ -125,72 +163,62 @@ export function WorkoutScreen({ id }: { id: number }) {
         </section>
       </div>
 
-      <section class={'card phase' + (workout.warmupDone ? ' done' : '')}>
-        <div class="phase-text">
-          <strong>Разминка</strong>
-          <span>{workout.warmup}</span>
-        </div>
-        <Check checked={workout.warmupDone} onClick={() => patch({ warmupDone: !workout.warmupDone })} label="разминка" />
-      </section>
-
-      {workout.items.map((it, i) => {
-        const ex = byId.get(it.exerciseId);
-        if (!ex) return null;
-        return (
-          <ExerciseCard
-            key={it.uid}
-            item={it}
-            ex={ex}
-            index={i}
-            count={workout.items.length}
-            onChange={(n) => setItem(i, n)}
-            onDelete={() => patch({ items: current.current!.items.filter((_, j) => j !== i) })}
-            onMove={(d) => move(i, d)}
-            hint={hintFor(prev?.items.find((p) => p.exerciseId === it.exerciseId), ex)}
-          />
-        );
-      })}
-
-      <button class="btn wide ghost" onClick={() => setAdding(true)}>
-        + Добавить упражнение
-      </button>
-
-      <section class={'card phase' + (workout.cooldownDone ? ' done' : '')}>
-        <div class="phase-text">
-          <strong>Заминка</strong>
-          <span>{workout.cooldown}</span>
-        </div>
-        <Check checked={workout.cooldownDone} onClick={() => patch({ cooldownDone: !workout.cooldownDone })} label="заминка" />
-      </section>
-
-      <label class="field">
-        <span>Заметка</span>
-        <textarea
-          class="text-input"
-          rows={2}
-          value={workout.note}
-          onChange={(e) => patch({ note: (e.target as HTMLTextAreaElement).value })}
-        />
-      </label>
-
-      {workout.finished ? (
-        <button class="btn wide" onClick={() => patch({ finished: false, runningSince: clockStart(workout.date) })}>
-          Вернуть в работу
-        </button>
+      {openIdx >= 0 ? (
+        card(openIdx)
       ) : (
-        <button
-          class="btn wide primary"
-          onClick={async () => {
-            await patch({ finished: true, ...stopClock() });
-            go('today');
-          }}
-        >
-          Завершить тренировку
-        </button>
+        <>
+          <section class={'card phase' + (workout.warmupDone ? ' done' : '')}>
+            <div class="phase-text">
+              <strong>Разминка</strong>
+              <span>{workout.warmup}</span>
+            </div>
+            <Check checked={workout.warmupDone} onClick={() => patch({ warmupDone: !workout.warmupDone })} label="разминка" />
+          </section>
+
+          {workout.items.map((_, i) => card(i))}
+
+          <button class="btn wide ghost" onClick={() => setAdding(true)}>
+            + Добавить упражнение
+          </button>
+
+          <section class={'card phase' + (workout.cooldownDone ? ' done' : '')}>
+            <div class="phase-text">
+              <strong>Заминка</strong>
+              <span>{workout.cooldown}</span>
+            </div>
+            <Check checked={workout.cooldownDone} onClick={() => patch({ cooldownDone: !workout.cooldownDone })} label="заминка" />
+          </section>
+
+          <label class="field">
+            <span>Заметка</span>
+            <textarea
+              class="text-input"
+              rows={2}
+              value={workout.note}
+              onChange={(e) => patch({ note: (e.target as HTMLTextAreaElement).value })}
+            />
+          </label>
+
+          {workout.finished ? (
+            <button class="btn wide" onClick={() => patch({ finished: false, runningSince: clockStart(workout.date) })}>
+              Вернуть в работу
+            </button>
+          ) : (
+            <button
+              class="btn wide primary"
+              onClick={async () => {
+                await patch({ finished: true, ...stopClock() });
+                go('today');
+              }}
+            >
+              Завершить тренировку
+            </button>
+          )}
+          <button class="btn wide danger-text" onClick={remove}>
+            Удалить тренировку
+          </button>
+        </>
       )}
-      <button class="btn wide danger-text" onClick={remove}>
-        Удалить тренировку
-      </button>
 
       {editingTime && (
         <DurationSheet
