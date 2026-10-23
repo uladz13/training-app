@@ -1,12 +1,12 @@
 import { ExerciseIcon } from './ExerciseIcon';
-import { useState } from 'preact/hooks';
+import { useRef, useState } from 'preact/hooks';
 import type { Exercise, SetEntry, WorkoutItem } from '../types';
 import { Stepper, Check, Sheet } from './ui';
 import { stepWeight, layoutLabel } from '../weights';
 import type { Hint } from '../progression';
 import { kg, secLabel } from '../util';
 import { emptySet } from '../workoutLogic';
-import { startRest, SET_REST_SEC } from '../timer';
+import { startRest, startSet, SET_REST_SEC } from '../timer';
 
 interface Props {
   item: WorkoutItem;
@@ -84,6 +84,30 @@ export function ExerciseCard({ item, ex, index, count, onChange, onDelete, onMov
     }
     // Все подходы отмечены — упражнение сворачивается.
     if (done && allDone) onClose();
+  };
+
+  // Таймер подхода (упражнения на время). Колбэк срабатывает позже — берём актуальное упражнение из ref.
+  const itemRef = useRef(item);
+  itemRef.current = item;
+  const [sidesDone, setSidesDone] = useState<Record<number, ('l' | 'r')[]>>({});
+  const runSet = (i: number, side?: 'l' | 'r') => {
+    const s = item.sets[i];
+    const sec = (side ? s[side] : s.v) ?? 0;
+    startSet(sec, ex.name + (side ? (side === 'l' ? ' · Л' : ' · П') : ''), (actual) => {
+      const cur = itemRef.current;
+      const sides = side ? [...new Set([...(sidesDone[i] ?? []), side])] : [];
+      const complete = !side || (sides.includes('l') && sides.includes('r'));
+      const sets = cur.sets.map((x, j) => (j === i ? { ...x, [side ?? 'v']: actual, done: x.done || complete } : x));
+      if (side) setSidesDone((m) => ({ ...m, [i]: sides }));
+      if (!complete) {
+        onChange({ ...cur, sets });
+        return;
+      }
+      const allDone = sets.every((x) => x.done);
+      onChange({ ...cur, sets, done: allDone ? true : cur.done });
+      startRest(allDone ? cur.restSec : SET_REST_SEC, allDone ? 'до следующего упражнения' : ex.name);
+      if (allDone) onClose();
+    });
   };
 
   const toggleDone = () => {
@@ -202,6 +226,21 @@ export function ExerciseCard({ item, ex, index, count, onChange, onDelete, onMov
                 )}
                 </div>
                 <Check checked={s.done} onClick={() => toggleSet(i)} label="подход выполнен" />
+                {ex.kind === 'time' && !s.done && (
+                  <div class="set-timer">
+                    {ex.perSide ? (
+                      (['l', 'r'] as const).map((side) => (
+                        <button class="chip set-start" disabled={sidesDone[i]?.includes(side)} onClick={() => runSet(i, side)}>
+                          ▶ {side === 'l' ? 'Л' : 'П'}
+                        </button>
+                      ))
+                    ) : (
+                      <button class="chip set-start" onClick={() => runSet(i)}>
+                        ▶ Начать подход
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

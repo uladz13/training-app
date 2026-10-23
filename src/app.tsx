@@ -10,11 +10,35 @@ import { ExercisesScreen } from './screens/ExercisesScreen';
 import { ExerciseScreen } from './screens/ExerciseScreen';
 import { ProgramScreen, DayEditor } from './screens/ProgramScreen';
 import { CatalogScreen } from './screens/CatalogScreen';
-import { useRestTimer, addRest, stopRest } from './timer';
+import { useRestTimer, addRest, stopRest, useSetTimer, stopSet } from './timer';
+
+/** Панель подхода на время; пока она видна, отдых не показывается. */
+function SetBar() {
+  const t = useSetTimer();
+  if (!t.running) return null;
+  const m = Math.floor(t.left / 60);
+  const s = String(t.left % 60).padStart(2, '0');
+  const pct = t.prep ? 100 : t.total ? (t.left / t.total) * 100 : 0;
+  return (
+    <div class={'rest-bar set-bar' + (t.prep ? ' prep' : '')}>
+      <div class="rest-fill" style={{ width: pct + '%' }} />
+      <div class="rest-content">
+        <div>
+          <div class="rest-label">{t.prep ? 'Приготовьтесь' : 'Подход'} · {t.label}</div>
+          <div class="rest-time">{t.prep ? t.left : `${m}:${s}`}</div>
+        </div>
+        <button class="chip" onClick={stopSet}>
+          Стоп
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function RestBar() {
   const t = useRestTimer();
-  if (!t.running) return null;
+  const set = useSetTimer();
+  if (!t.running || set.running) return null;
   const m = Math.floor(t.left / 60);
   const s = String(t.left % 60).padStart(2, '0');
   const pct = t.total ? (t.left / t.total) * 100 : 0;
@@ -84,6 +108,7 @@ export function App() {
     <>
       <main>{screen}</main>
       <RestBar />
+      <SetBar />
       <nav class="tabbar">
         {nav.map(([k, l]) => (
           <button class={tab === k ? 'on' : ''} onClick={() => go(k)}>
