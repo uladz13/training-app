@@ -1,12 +1,18 @@
-import { db, SCHEMA_VERSION } from './db';
+import { addMissingExercises, db, SCHEMA_VERSION } from './db';
 import { todayIso } from './util';
+import type { DayTemplate, Workout } from './types';
+import { BODYWEIGHT_PROGRAM } from './data/programBodyweight';
+import { dayId } from './data/programs';
 
 export interface BackupFile {
   app: 'training-app';
   schema: number;
   exportedAt: string;
   exercises: unknown[];
-  templates: unknown[];
+  /** до схемы 5: дни одной программы (ключ — день) */
+  templates?: unknown[];
+  /** с схемы 5: дни всех программ (ключ — «программа:день») */
+  days?: unknown[];
   workouts: unknown[];
   body?: unknown[];
 }
@@ -17,7 +23,7 @@ export async function exportBackup(): Promise<void> {
     schema: SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
     exercises: await db.exercises.toArray(),
-    templates: await db.templates.toArray(),
+    days: await db.days.toArray(),
     workouts: await db.workouts.toArray(),
     body: await db.body.toArray()
   };
@@ -47,14 +53,23 @@ export async function importBackup(file: File): Promise<number> {
   const data = JSON.parse(await file.text()) as BackupFile;
   if (data.app !== 'training-app' || !Array.isArray(data.workouts)) throw new Error('Это не файл бэкапа приложения');
   if (data.schema > SCHEMA_VERSION) throw new Error('Бэкап создан более новой версией приложения');
-  await db.transaction('rw', [db.exercises, db.templates, db.workouts, db.meta, db.body], async () => {
+  // Схема ≤ 4: одна программа (templates) → «С гантелями», «Свой вес» — по умолчанию; тренировкам — признак программы.
+  const days: DayTemplate[] = data.days
+    ? (data.days as DayTemplate[])
+    : [
+        ...((data.templates ?? []) as Omit<DayTemplate, 'id' | 'program'>[]).map((t) => ({ ...t, id: dayId('dumbbell', t.day), program: 'dumbbell' as const })),
+        ...BODYWEIGHT_PROGRAM
+      ];
+  const workouts = (data.workouts as Workout[]).map((w) => (w.program ? w : { ...w, program: 'dumbbell' as const }));
+  await db.transaction('rw', [db.exercises, db.days, db.workouts, db.meta, db.body], async () => {
     await db.exercises.clear();
-    await db.templates.clear();
+    await db.days.clear();
     await db.workouts.clear();
     await db.body.clear();
     await db.exercises.bulkPut(data.exercises as never[]);
-    await db.templates.bulkPut(data.templates as never[]);
-    await db.workouts.bulkPut(data.workouts as never[]);
+    await addMissingExercises();
+    await db.days.bulkPut(days);
+    await db.workouts.bulkPut(workouts);
     await db.body.bulkPut((data.body ?? []) as never[]);
     await db.meta.put({ key: 'bodySeeded', value: 'import' });
     await db.meta.put({ key: 'seeded', value: 'import' });

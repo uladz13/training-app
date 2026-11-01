@@ -7,11 +7,21 @@ import { AddExerciseSheet } from '../components/AddExerciseSheet';
 import { DAY_NAMES, kg } from '../util';
 import { stepWeight } from '../weights';
 import { go } from '../router';
-import type { DayTemplate, Exercise, TemplateItem } from '../types';
+import type { DayTemplate, Exercise, ProgramId, TemplateItem } from '../types';
+import { DEFAULT_PROGRAM, PROGRAM_INFO, dayId } from '../data/programs';
+import { ProgramSwitch } from '../components/ProgramSwitch';
+
+/** Последняя открытая программа — чтобы «‹ Программа» из редактора дня вернул к ней. */
+let lastProgram: ProgramId = DEFAULT_PROGRAM;
 
 /** Список дней программы. */
 export function ProgramScreen() {
-  const templates = useLive(() => db.templates.toArray(), []);
+  const [program, setProgram] = useState<ProgramId>(lastProgram);
+  const choose = (p: ProgramId) => {
+    lastProgram = p;
+    setProgram(p);
+  };
+  const templates = useLive(() => db.days.where('program').equals(program).toArray(), [program]);
   const exercises = useLive(() => db.exercises.toArray(), []);
   if (!templates || !exercises) return <div class="loading">Загрузка…</div>;
   const byId = new Map(exercises.map((e) => [e.id, e]));
@@ -25,13 +35,14 @@ export function ProgramScreen() {
           <h1>Программа</h1>
         </div>
       </div>
+      <ProgramSwitch value={program} onChange={choose} />
       <p class="muted small">
         Новая тренировка берёт список упражнений, цели и отдых из программы, а вес и повторы — с прошлого раза.
       </p>
       {templates
         .sort((a, b) => a.day - b.day)
         .map((t) => (
-          <button class="card list-card" onClick={() => go('program/' + t.day)}>
+          <button class="card list-card" onClick={() => go('program/' + t.id)}>
             <div class="eyebrow">{DAY_NAMES[t.day]}</div>
             <div class="today-title">{t.title}</div>
             <div class="muted small">{t.items.map((i) => byId.get(i.exerciseId)?.name ?? '?').join(' · ')}</div>
@@ -42,8 +53,10 @@ export function ProgramScreen() {
 }
 
 /** Редактор одного дня программы. Изменения сохраняются сразу. */
-export function DayEditor({ day }: { day: number }) {
-  const saved = useLive(() => db.templates.get(day), [day]);
+export function DayEditor({ id }: { id: string }) {
+  // Старые ссылки вида «program/3» — день программы «С гантелями».
+  const key = /^\d+$/.test(id) ? dayId(DEFAULT_PROGRAM, Number(id)) : id;
+  const saved = useLive(() => db.days.get(key), [key]);
   const exercises = useLive(() => db.exercises.toArray(), []);
   const [tpl, setTpl] = useState<DayTemplate | null>(null);
   const [adding, setAdding] = useState(false);
@@ -56,7 +69,7 @@ export function DayEditor({ day }: { day: number }) {
   const update = (p: Partial<DayTemplate>) => {
     const next = { ...tpl, ...p };
     setTpl(next);
-    db.templates.put(next);
+    db.days.put(next);
   };
   const setItem = (i: number, p: Partial<TemplateItem>) => update({ items: tpl.items.map((x, j) => (j === i ? { ...x, ...p } : x)) });
   const move = (i: number, d: -1 | 1) => {
@@ -81,7 +94,8 @@ export function DayEditor({ day }: { day: number }) {
           <button class="link small" onClick={() => go('program')}>
             ‹ Программа
           </button>
-          <h1>{DAY_NAMES[day]}</h1>
+          <div class="eyebrow">{PROGRAM_INFO[tpl.program].name}</div>
+          <h1>{DAY_NAMES[tpl.day]}</h1>
         </div>
       </div>
       <label class="field">
@@ -115,7 +129,7 @@ export function DayEditor({ day }: { day: number }) {
                 </button>
                 <button
                   class="icon-btn danger-text"
-                  onClick={() => confirm(`Убрать «${ex.name}» из программы на ${DAY_NAMES[day].toLowerCase()}?`) && update({ items: tpl.items.filter((_, j) => j !== i) })}
+                  onClick={() => confirm(`Убрать «${ex.name}» из программы на ${DAY_NAMES[tpl.day].toLowerCase()}?`) && update({ items: tpl.items.filter((_, j) => j !== i) })}
                   aria-label="удалить"
                 >
                   ✕

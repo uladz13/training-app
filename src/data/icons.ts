@@ -132,6 +132,39 @@ const DEFS: IconDef[] = [
   { id: 'stretch-general', name: 'Общая растяжка', group: 'mobility', draw: (a) =>
       line('41,8 29,17.6 29,44') + line('10.1,23.25 19,18 19,28.9 7,41') + head(24, 8, a) },
 
+  // программа «Свой вес» (только пол)
+  { id: 'superman', name: 'Супермен', group: 'back', draw: (a) =>
+      floor() + `<path d="M27 34L13 25L18 33Z" fill="${a}" stroke="${a}" stroke-width="2" stroke-linejoin="round"/>` +
+      line('4,32 16,38 30,38') + line('30,38 44,32') + head(35, 27, a) },
+  { id: 'prone-ytw', name: 'Разведения Y-T-W', group: 'back', draw: (a) =>
+      `<rect x="9" y="2" width="30" height="44" rx="5" stroke="${FLOOR}" stroke-width="2" fill="none"/>` +
+      line('24,17 24,32') + line('20,43 24,32 28,43') + line('11,5 24,18 37,5') + head(24, 10, a, 4) },
+  { id: 'self-curl', name: 'Сгибание с самосопротивлением', group: 'arms', draw: (a) =>
+      line('18,44 22,30 22,15') + line('26,44 22,30') + line('22,17 22,27 32,20') + line('22,19 28,26 33,21') +
+      path('M38 10V16M35 13L38 16L41 13', a) + head(23, 7, a) },
+  { id: 'leg-raise', name: 'Подъём ног лёжа', group: 'core', draw: (a) =>
+      floor() + line('14,40 28,40 30,12') + path('M38 14Q44 26 38 36M38 36L35 33M38 36L41 34', a) + head(8, 36, a) },
+  { id: 'squat', name: 'Приседания', group: 'legs', draw: (a) =>
+      `<line x1="10" y1="44" x2="38" y2="44" stroke="${FLOOR}" ${S}/>` +
+      line('16,30 28,30 28,40 32,40') + line('16,30 22,16') + line('22,18 36,18') + head(25, 10, a) },
+  { id: 'glute-bridge-single', name: 'Мост на одной ноге', group: 'legs', draw: (a) =>
+      floor() + line('13,40 27,28 37,25 38,40') + line('27,28 44,17') + head(7, 35, a) },
+  { id: 'donkey-kick', name: 'Отведение ноги назад', group: 'legs', draw: (a) =>
+      floor() + line('16,40 16,28 32,28 32,40') + line('16,28 6,28 6,16') + sparks(6, 13, a) + head(38, 24, a) },
+  { id: 'calf-raise-single', name: 'Носки на одной ноге', group: 'legs', draw: (a) =>
+      `<line x1="42" y1="4" x2="42" y2="44" stroke="${FLOOR}" ${S}/>` +
+      line('24,14 24,36 28,41') + line('24,28 17,33 15,25') + line('24,17 37,20') + chevUp(32, 34, a) + head(24, 7, a) },
+  { id: 'pike-push-up', name: 'Отжимания «пика»', group: 'shoulders', draw: (a) =>
+      floor() + line('6,40 20,13 30,31 33,40') + head(37, 29, a) },
+  { id: 'push-up-wide', name: 'Широкие отжимания', group: 'chest', draw: (a) =>
+      floor() + line('6,40 34,27') + line('33,28 34,40') +
+      path('M12 12H32M12 12L16 9M12 12L16 15M32 12L28 9M32 12L28 15', a) + head(40, 22, a) },
+  { id: 'push-up-close', name: 'Узкие отжимания', group: 'arms', draw: (a) =>
+      floor() + line('6,40 34,27') + line('33,28 34,40') +
+      path('M10 12H19M19 12L15 9M19 12L15 15M34 12H25M25 12L29 9M25 12L29 15', a) + head(40, 22, a) },
+  { id: 'floor-dip', name: 'Обратные отжимания', group: 'arms', draw: (a) =>
+      floor() + line('8,40 12,28 26,32 33,23 39,40') + head(14, 20, a) },
+
   // по умолчанию
   { id: DEFAULT_ICON, name: 'Гантель', group: 'neutral', draw: (a) =>
       path('M14 13.6C14 12.16 12.66 11 11 11S8 12.16 8 13.6V34.4C8 35.84 9.34 37 11 37S14 35.84 14 34.4Z' +

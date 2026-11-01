@@ -4,6 +4,9 @@ import { useLive } from '../hooks';
 import { Sheet, Stepper } from './ui';
 import { DAY_SHORT, formatDate, todayIso } from '../util';
 import { isoDay } from '../data/seed';
+import { DEFAULT_PROGRAM, dayId } from '../data/programs';
+import { ProgramSwitch } from './ProgramSwitch';
+import type { ProgramId } from '../types';
 import { createWorkout, PAST_DURATION_MIN } from '../workoutLogic';
 import { go } from '../router';
 
@@ -13,8 +16,8 @@ export function AddWorkoutSheet({ initialDate, onClose }: { initialDate: string;
   const [date, setDate] = useState(initialDate > today ? today : initialDate);
   const [day, setDay] = useState(isoDay(date));
   const [minutes, setMinutes] = useState(PAST_DURATION_MIN);
-  const templates = useLive(() => db.templates.toArray(), []);
-  const tpl = templates?.find((t) => t.day === day);
+  const [program, setProgram] = useState<ProgramId>(DEFAULT_PROGRAM);
+  const tpl = useLive(() => db.days.get(dayId(program, day)), [program, day]);
   const valid = !!date && date <= today && !!tpl;
 
   const changeDate = (d: string) => {
@@ -24,7 +27,7 @@ export function AddWorkoutSheet({ initialDate, onClose }: { initialDate: string;
   };
   const create = async () => {
     if (!valid) return;
-    const id = await createWorkout(date, day, minutes);
+    const id = await createWorkout(date, day, program, minutes);
     onClose();
     go('workout/' + id);
   };
@@ -36,8 +39,12 @@ export function AddWorkoutSheet({ initialDate, onClose }: { initialDate: string;
         <input class="text-input date-input" type="date" value={date} max={today} onChange={(e) => changeDate((e.target as HTMLInputElement).value)} />
       </label>
       <div class="field">
+        <span>Программа</span>
+        <ProgramSwitch value={program} onChange={setProgram} />
+      </div>
+      <div class="field">
         <span>День программы</span>
-        <div class="day-picker">
+        <div class={'day-picker prog-' + program}>
           {[1, 2, 3, 4, 5, 6, 7].map((d) => (
             <button class={(d === day ? 'on' : '') + (d === isoDay(date) ? ' today' : '')} onClick={() => setDay(d)}>
               {DAY_SHORT[d]}

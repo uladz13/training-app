@@ -29,7 +29,13 @@ export interface TemplateItem extends Target {
   weight?: number;
 }
 
+/** Программа тренировок: с гантелями или со своим весом. */
+export type ProgramId = 'dumbbell' | 'bodyweight';
+
 export interface DayTemplate {
+  /** ключ: `${program}:${day}` */
+  id: string;
+  program: ProgramId;
   /** 1 = понедельник … 7 = воскресенье */
   day: number;
   title: string;
@@ -66,6 +72,8 @@ export interface Workout {
   /** YYYY-MM-DD */
   date: string;
   day: number;
+  /** программа, из которой создана тренировка (с v5 есть у всех; старые — «С гантелями») */
+  program?: ProgramId;
   title: string;
   warmup: string;
   cooldown: string;

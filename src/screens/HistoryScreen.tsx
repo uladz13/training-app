@@ -7,6 +7,7 @@ import type { Workout } from '../types';
 import { durationShort, elapsedSec, formatVolume, workoutVolume } from '../stats';
 import { AddWorkoutSheet } from '../components/AddWorkoutSheet';
 import { ShowMore, useShowMore } from '../components/ShowMore';
+import { PROGRAM_IDS, PROGRAM_INFO, programOf } from '../data/programs';
 
 const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -60,7 +61,13 @@ function Calendar({
           if (!d) return <span />;
           const ws = byDate.get(d);
           const cls = ['cal-day'];
-          if (ws) cls.push(ws.every((w) => w.finished) ? 'has' : 'partial');
+          if (ws) {
+            cls.push(ws.every((w) => w.finished) ? 'has' : 'partial');
+            // Цвет программы: «Свой вес» — свой цвет, обе программы в один день — два цвета.
+            const progs = new Set(ws.map(programOf));
+            if (progs.size > 1) cls.push('mixed');
+            else if (progs.has('bodyweight')) cls.push('bw');
+          }
           if (d === today) cls.push('today');
           if (d === selected) cls.push('sel');
           return (
@@ -69,6 +76,13 @@ function Calendar({
             </button>
           );
         })}
+      </div>
+      <div class="cal-legend muted small">
+        {PROGRAM_IDS.map((p) => (
+          <span>
+            <i class={'prog-dot prog-' + p} /> {PROGRAM_INFO[p].name}
+          </span>
+        ))}
       </div>
     </section>
   );
@@ -145,6 +159,7 @@ export function HistoryScreen() {
               <div class="muted small">
                 {durationShort(elapsedSec(w))} · {formatVolume(workoutVolume(w, exById))} · {done}/{w.items.length} упр.
                 {w.finished ? '' : ' · не завершена'}
+                {programOf(w) !== 'dumbbell' && ` · ${PROGRAM_INFO[programOf(w)].name}`}
               </div>
             </div>
             <span class="arrow">›</span>

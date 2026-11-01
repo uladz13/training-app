@@ -168,6 +168,20 @@ main { max-width: 640px; margin: 0 auto; }
 .cal-day { aspect-ratio: 1; border-radius: 10px; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 15px; }
 .cal-day.has { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
 .cal-day.partial { box-shadow: inset 0 0 0 2px var(--accent); color: var(--text); font-weight: 600; }
+/* Программы: «С гантелями» — акцент приложения, «Свой вес» — синий (data/programs.ts) */
+.cal-day.has.bw { background: #7aa2ff; color: #0b1a3a; }
+.cal-day.partial.bw { box-shadow: inset 0 0 0 2px #7aa2ff; }
+.cal-day.has.mixed { background: linear-gradient(135deg, var(--accent) 50%, #7aa2ff 50%); color: #0b1a3a; }
+.cal-day.partial.mixed { box-shadow: inset 2px 2px 0 0 var(--accent), inset -2px -2px 0 0 #7aa2ff; }
+.cal-legend { display: flex; gap: 14px; justify-content: center; margin-top: 8px; }
+.cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.prog-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.prog-dot.prog-dumbbell { background: var(--accent); }
+.prog-dot.prog-bodyweight { background: #7aa2ff; }
+.program-switch { margin-bottom: 10px; }
+.program-switch button { flex: 1; }
+.program-switch button.on.prog-bodyweight { background: #7aa2ff; color: #0b1a3a; }
+.day-picker.prog-bodyweight button.on { background: #7aa2ff; color: #0b1a3a; }
 .cal-day.today { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; color: var(--text); }
 .cal-day.sel { outline: 2px solid #f0d58a; outline-offset: -2px; }
 .list-caption { padding: 0 4px; }

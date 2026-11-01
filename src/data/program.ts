@@ -1,4 +1,5 @@
 import type { DayTemplate } from '../types';
+import { programDays } from './programs';
 
 export const PROGRAM_START = '2026-09-14';
 
@@ -6,7 +7,7 @@ const NO_KNEE = 'Без прыжков, резких поворотов и бо�
 
 // Недельный шаблон. Диапазоны повторений и отдых — из программы,
 // состав упражнений и стартовые веса — по текущим рабочим весам.
-export const PROGRAM: DayTemplate[] = [
+export const PROGRAM: DayTemplate[] = programDays('dumbbell', [
   {
     day: 1,
     title: 'Спина + бицепс + корпус',
@@ -114,4 +115,4 @@ export const PROGRAM: DayTemplate[] = [
       { exerciseId: 'stretch-hamstring', sets: 2, min: 20, max: 30, restSec: 15 }
     ]
   }
-];
+]);

@@ -10,6 +10,7 @@ import { DAY_NAMES, formatDate } from '../util';
 import { clockStart, itemForExercise } from '../workoutLogic';
 import { go } from '../router';
 import { isoDay } from '../data/seed';
+import { programOf } from '../data/programs';
 import { hintFor } from '../progression';
 
 export function WorkoutScreen({ id }: { id: number }) {
@@ -90,7 +91,7 @@ export function WorkoutScreen({ id }: { id: number }) {
   };
 
   const add = async (ex: Exercise) => {
-    const it = await itemForExercise(ex, current.current!.date, current.current!.day);
+    const it = await itemForExercise(ex, current.current!.date, current.current!.day, programOf(current.current!));
     await patch({ items: [...current.current!.items, it] });
     setAdding(false);
   };

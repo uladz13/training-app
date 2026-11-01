@@ -1,5 +1,6 @@
 import { db } from './db';
-import type { Exercise, Workout, WorkoutItem, SetEntry, Target } from './types';
+import type { Exercise, ProgramId, Workout, WorkoutItem, SetEntry, Target } from './types';
+import { DEFAULT_PROGRAM, dayId, programOf } from './data/programs';
 import { isoDay } from './data/seed';
 import { todayIso, uid } from './util';
 
@@ -37,11 +38,11 @@ export function prefillSets(ex: Exercise, target: Target, sameDay?: WorkoutItem,
   return base.map((s, i) => ({ ...s, w: (lastSets.length ? lastSets[Math.min(i, lastSets.length - 1)].w : undefined) ?? startWeight ?? 0 }));
 }
 
-/** Записи упражнения в более ранних тренировках (новые первыми): в тот же день программы и в любой день. */
-function previousItems(earlier: Workout[], exerciseId: string, day: number) {
+/** Записи упражнения в более ранних тренировках (новые первыми): в тот же день той же программы и в любой день. */
+function previousItems(earlier: Workout[], exerciseId: string, day: number, program: ProgramId) {
   const find = (w: Workout) => w.items.find((i) => i.exerciseId === exerciseId && i.sets.length > 0);
   return {
-    sameDay: earlier.filter((w) => w.day === day).map(find).find(Boolean),
+    sameDay: earlier.filter((w) => w.day === day && programOf(w) === program).map(find).find(Boolean),
     last: earlier.map(find).find(Boolean)
   };
 }
@@ -54,18 +55,18 @@ async function workoutsBefore(date: string): Promise<Workout[]> {
  * План тренировки на дату: список упражнений, цели и отдых — из шаблона дня; цифры — по `prefillSets`
  * (подходы и повторения — с того же дня программы, вес — с прошлого раза в любой день).
  */
-export async function planItems(date: string, day: number): Promise<{ items: WorkoutItem[]; prevDate?: string }> {
-  const tpl = await db.templates.get(day);
+export async function planItems(date: string, day: number, program: ProgramId = DEFAULT_PROGRAM): Promise<{ items: WorkoutItem[]; prevDate?: string }> {
+  const tpl = await db.days.get(dayId(program, day));
   if (!tpl) throw new Error('Нет шаблона для дня ' + day);
   const exercises = new Map((await db.exercises.toArray()).map((e) => [e.id, e]));
   const earlier = await workoutsBefore(date);
-  const prevSameDay = earlier.find((w) => w.day === day);
+  const prevSameDay = earlier.find((w) => w.day === day && programOf(w) === program);
 
   const items = tpl.items
     .filter((t) => exercises.has(t.exerciseId))
     .map((t): WorkoutItem => {
       const ex = exercises.get(t.exerciseId)!;
-      const { sameDay, last } = previousItems(earlier, ex.id, day);
+      const { sameDay, last } = previousItems(earlier, ex.id, day, program);
       const target = { sets: t.sets, min: t.min, max: t.max };
       return { uid: uid(), exerciseId: ex.id, done: false, restSec: t.restSec, target, sets: prefillSets(ex, target, sameDay, last, t.weight) };
     });
@@ -81,13 +82,19 @@ export function clockStart(date: string): number | null {
 export const PAST_DURATION_MIN = 50;
 
 /** Создать тренировку по плану на дату; для прошедшей даты — с длительностью (по умолчанию 50 мин) и без таймера. */
-export async function createWorkout(date: string, day = isoDay(date), pastDurationMin = PAST_DURATION_MIN): Promise<number> {
-  const tpl = await db.templates.get(day);
+export async function createWorkout(
+  date: string,
+  day = isoDay(date),
+  program: ProgramId = DEFAULT_PROGRAM,
+  pastDurationMin = PAST_DURATION_MIN
+): Promise<number> {
+  const tpl = await db.days.get(dayId(program, day));
   if (!tpl) throw new Error('Нет шаблона для дня ' + day);
-  const { items } = await planItems(date, day);
+  const { items } = await planItems(date, day, program);
   const w: Workout = {
     date,
     day,
+    program,
     title: tpl.title,
     warmup: tpl.warmup,
     cooldown: tpl.cooldown,
@@ -103,8 +110,8 @@ export async function createWorkout(date: string, day = isoDay(date), pastDurati
 }
 
 /** Упражнение, добавленное в тренировку вручную: цифры — по тем же правилам, что и в плане (`prefillSets`). */
-export async function itemForExercise(ex: Exercise, date: string, day: number): Promise<WorkoutItem> {
-  const { sameDay, last } = previousItems(await workoutsBefore(date), ex.id, day);
+export async function itemForExercise(ex: Exercise, date: string, day: number, program: ProgramId): Promise<WorkoutItem> {
+  const { sameDay, last } = previousItems(await workoutsBefore(date), ex.id, day, program);
   const src = sameDay ?? last;
   if (!src) {
     const base = ex.kind === 'time' ? { min: 30, max: 30 } : { min: 10, max: 12 };

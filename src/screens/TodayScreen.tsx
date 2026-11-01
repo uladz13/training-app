@@ -4,11 +4,13 @@ import { db } from '../db';
 import { useLive } from '../hooks';
 import { DAY_NAMES, DAY_SHORT, formatDate, todayIso } from '../util';
 import { isoDay } from '../data/seed';
+import { DEFAULT_PROGRAM, PROGRAM_INFO, dayId, programOf } from '../data/programs';
+import { ProgramSwitch } from '../components/ProgramSwitch';
 import { createWorkout, planItems } from '../workoutLogic';
 import { go } from '../router';
 import { summary } from '../components/ExerciseCard';
 import { daysSinceBackup, exportBackup } from '../backup';
-import type { WorkoutItem } from '../types';
+import type { ProgramId, WorkoutItem } from '../types';
 import { BodyCard } from '../components/BodyCard';
 import { durationShort, elapsedSec, formatVolume, workoutVolume } from '../stats';
 
@@ -16,16 +18,17 @@ export function TodayScreen() {
   const date = todayIso();
   const [day, setDay] = useState(isoDay(date));
   const todays = useLive(() => db.workouts.where('date').equals(date).toArray(), [date]);
-  const tpl = useLive(() => db.templates.get(day), [day]);
+  const [program, setProgram] = useState<ProgramId>(DEFAULT_PROGRAM);
+  const tpl = useLive(() => db.days.get(dayId(program, day)), [program, day]);
   const exercises = useLive(() => db.exercises.toArray(), []);
-  const plan = useLive(() => planItems(date, day), [day, date]);
+  const plan = useLive(() => planItems(date, day, program), [program, day, date]);
   const backupDays = useLive(() => daysSinceBackup(), []);
 
   if (!todays || !exercises || !plan) return <div class="loading">Загрузка…</div>;
   const byId = new Map(exercises.map((e) => [e.id, e]));
 
   const start = async () => {
-    const id = await createWorkout(date, day);
+    const id = await createWorkout(date, day, program);
     go('workout/' + id);
   };
 
@@ -54,7 +57,10 @@ export function TodayScreen() {
         return (
           <button class="card today-card" onClick={() => go('workout/' + w.id)}>
             <div>
-              <div class="eyebrow">{w.finished ? 'Завершена' : 'В процессе'}</div>
+              <div class="eyebrow">
+                {w.finished ? 'Завершена' : 'В процессе'}
+                {programOf(w) !== DEFAULT_PROGRAM && ` · ${PROGRAM_INFO[programOf(w)].name}`}
+              </div>
               <div class="today-title">{w.title}</div>
               <div class="muted">
                 {done} из {w.items.length} упр. · {durationShort(elapsedSec(w))} · {formatVolume(workoutVolume(w, byId))}
@@ -66,7 +72,8 @@ export function TodayScreen() {
       })}
 
       <section class="card">
-        <div class="day-picker">
+        <ProgramSwitch value={program} onChange={setProgram} />
+        <div class={'day-picker prog-' + program}>
           {[1, 2, 3, 4, 5, 6, 7].map((d) => (
             <button class={(d === day ? 'on' : '') + (d === isoDay(date) ? ' today' : '')} onClick={() => setDay(d)}>
               {DAY_SHORT[d]}

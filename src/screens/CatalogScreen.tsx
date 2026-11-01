@@ -14,7 +14,7 @@ const KIND = { weight: 'с весом', reps: 'повторы', time: 'на вр
 export function CatalogScreen() {
   const exercises = useLive(() => db.exercises.toArray(), []);
   const workouts = useLive(() => db.workouts.toArray(), []);
-  const templates = useLive(() => db.templates.toArray(), []);
+  const templates = useLive(() => db.days.toArray(), []);
   const [edit, setEdit] = useState<Exercise | null>(null);
   const [q, setQ] = useState('');
   if (!exercises || !workouts || !templates) return <div class="loading">Загрузка…</div>;
@@ -76,10 +76,10 @@ function EditExercise({ ex, canDelete, inProgram, onClose }: { ex: Exercise; can
   };
   const remove = async () => {
     if (!confirm(`Удалить упражнение «${ex.name}»?${inProgram ? ' Оно будет убрано и из программы.' : ''}`)) return;
-    await db.transaction('rw', db.exercises, db.templates, async () => {
+    await db.transaction('rw', db.exercises, db.days, async () => {
       await db.exercises.delete(ex.id);
-      for (const t of await db.templates.toArray()) {
-        if (t.items.some((i) => i.exerciseId === ex.id)) await db.templates.put({ ...t, items: t.items.filter((i) => i.exerciseId !== ex.id) });
+      for (const t of await db.days.toArray()) {
+        if (t.items.some((i) => i.exerciseId === ex.id)) await db.days.put({ ...t, items: t.items.filter((i) => i.exerciseId !== ex.id) });
       }
     });
     onClose();

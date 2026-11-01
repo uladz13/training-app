@@ -6,12 +6,13 @@ import { exportBackup, importBackup } from '../backup';
 import { DAY_NAMES, kg } from '../util';
 import { availableWeights, layoutLabel } from '../weights';
 import type { Equipment } from '../types';
+import { DEFAULT_PROGRAM } from '../data/programs';
 
 export function MoreScreen() {
   const [msg, setMsg] = useState('');
   const persisted = useLive(async () => (navigator.storage?.persisted ? navigator.storage.persisted() : false), []);
   const lastBackup = useLive(() => db.meta.get('lastBackup'), []);
-  const templates = useLive(() => db.templates.toArray(), []);
+  const templates = useLive(() => db.days.where('program').equals(DEFAULT_PROGRAM).toArray(), []);
   const exercises = useLive(() => db.exercises.toArray(), []);
   const byId = new Map((exercises ?? []).map((e) => [e.id, e]));
 
@@ -78,7 +79,7 @@ export function MoreScreen() {
         </button>
       </section>
 
-      <p class="muted small center">Тренировки · версия 0.9.0</p>
+      <p class="muted small center">Тренировки · версия 0.10.0</p>
     </div>
   );
 }

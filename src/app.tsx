@@ -86,7 +86,7 @@ export function App() {
   else if (page === 'body') screen = <BodyScreen />;
   else if (page === 'exercises') screen = <ExercisesScreen />;
   else if (page === 'exercise' && arg) screen = <ExerciseScreen id={decodeURIComponent(arg)} />;
-  else if (page === 'program' && arg) screen = <DayEditor day={Number(arg)} />;
+  else if (page === 'program' && arg) screen = <DayEditor id={decodeURIComponent(arg)} />;
   else if (page === 'program') screen = <ProgramScreen />;
   else if (page === 'catalog') screen = <CatalogScreen />;
   else screen = <TodayScreen />;
