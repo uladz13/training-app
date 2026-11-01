@@ -1,4 +1,5 @@
 import { ExerciseIcon } from '../components/ExerciseIcon';
+import { ExerciseGroups } from '../components/ExerciseGroups';
 import { useState } from 'preact/hooks';
 import { db } from '../db';
 import { useLive } from '../hooks';
@@ -17,6 +18,7 @@ export function ExercisesScreen() {
   const today = todayIso();
   const defFrom = shiftDate(weekStart(today), -7 * (WEEKS - 1));
   const [range, setRange] = useState({ from: defFrom, to: today });
+  const [q, setQ] = useState('');
   if (!workouts || !exercises) return <div class="loading">Загрузка…</div>;
   const byId = new Map(exercises.map((e) => [e.id, e]));
 
@@ -67,17 +69,27 @@ export function ExercisesScreen() {
       <section class="card">
         <h2>Упражнения</h2>
         {list.length === 0 && <div class="empty small">Записей пока нет.</div>}
-        {list.map(({ ex, sessions }) => (
-          <button class="list-row" onClick={() => go('exercise/' + ex.id)}>
-            <span class="with-icon">
-              <ExerciseIcon ex={ex} size={28} />
-              {ex.name}
-            </span>
-            <span class="muted small">
-              {formatDate(sessions[sessions.length - 1].date)} · {sessions.length} трен. ›
-            </span>
-          </button>
-        ))}
+        {list.length > 0 && (
+          <>
+            <input class="text-input" placeholder="Поиск" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />
+            <ExerciseGroups
+              items={list}
+              exerciseOf={(x) => x.ex}
+              query={q}
+              render={({ ex, sessions }) => (
+                <button class="list-row" onClick={() => go('exercise/' + ex.id)}>
+                  <span class="with-icon">
+                    <ExerciseIcon ex={ex} size={28} />
+                    {ex.name}
+                  </span>
+                  <span class="muted small">
+                    {formatDate(sessions[sessions.length - 1].date)} · {sessions.length} трен. ›
+                  </span>
+                </button>
+              )}
+            />
+          </>
+        )}
       </section>
     </div>
   );

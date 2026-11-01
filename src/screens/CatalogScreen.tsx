@@ -1,5 +1,6 @@
 import { ExerciseIcon } from '../components/ExerciseIcon';
 import { IconPicker } from '../components/IconPicker';
+import { ExerciseGroups } from '../components/ExerciseGroups';
 import { useState } from 'preact/hooks';
 import { db } from '../db';
 import { useLive } from '../hooks';
@@ -15,6 +16,7 @@ export function CatalogScreen() {
   const workouts = useLive(() => db.workouts.toArray(), []);
   const templates = useLive(() => db.templates.toArray(), []);
   const [edit, setEdit] = useState<Exercise | null>(null);
+  const [q, setQ] = useState('');
   if (!exercises || !workouts || !templates) return <div class="loading">Загрузка…</div>;
   const used = new Set(workouts.flatMap((w) => w.items.map((i) => i.exerciseId)));
 
@@ -28,10 +30,13 @@ export function CatalogScreen() {
           <h1>Упражнения</h1>
         </div>
       </div>
+      <input class="text-input" placeholder="Поиск" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />
       <section class="card">
-        {[...exercises]
-          .sort((a, b) => a.name.localeCompare(b.name, 'ru'))
-          .map((e) => (
+        <ExerciseGroups
+          items={exercises}
+          exerciseOf={(e) => e}
+          query={q}
+          render={(e) => (
             <button class="list-row" onClick={() => setEdit(e)}>
               <span class="with-icon">
                 <ExerciseIcon ex={e} size={28} />
@@ -42,7 +47,8 @@ export function CatalogScreen() {
                 {e.custom ? ' · своё' : ''} ›
               </span>
             </button>
-          ))}
+          )}
+        />
       </section>
       {edit && (
         <EditExercise
